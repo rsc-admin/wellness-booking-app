@@ -85,15 +85,15 @@ https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit
 In the wellness booking app code, find these two lines near the top:
 
 ```javascript
-const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
-const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
+const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
+const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE';
 ```
 
 Replace with your actual values:
 
 ```javascript
-const SHEET_ID = '1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p';
-const API_KEY = 'AIzaSyD_abcdef123456-xyz';
+const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
+const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
 ```
 
 ### Test It

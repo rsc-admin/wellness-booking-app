@@ -360,28 +360,32 @@ export default function ProviderDashboard({ onBack }) {
                   {workHours[day].isOpen ? (
                     <>
                       {workHours[day].shifts.map((shift, index) => (
-                        <div key={`${day}-${index}`} style={styles.shiftRow}>
-                          <input
-                            type="time"
-                            value={shift.start}
-                            onChange={(event) => updateShift(day, index, 'start', event.target.value)}
-                            style={styles.input}
-                          />
-                          <span>to</span>
-                          <input
-                            type="time"
-                            value={shift.end}
-                            onChange={(event) => updateShift(day, index, 'end', event.target.value)}
-                            style={styles.input}
-                          />
-                          <button
-                            type="button"
-                            style={styles.ghostButton}
-                            onClick={() => removeShift(day, index)}
-                            disabled={workHours[day].shifts.length === 1}
-                          >
-                            Remove
-                          </button>
+                        <div key={`${day}-${index}`} style={styles.shiftBlock}>
+                          <div style={styles.shiftRow}>
+                            <input
+                              type="time"
+                              value={shift.start}
+                              onChange={(event) => updateShift(day, index, 'start', event.target.value)}
+                              style={styles.input}
+                            />
+                            <span>to</span>
+                            <input
+                              type="time"
+                              value={shift.end}
+                              onChange={(event) => updateShift(day, index, 'end', event.target.value)}
+                              style={styles.input}
+                            />
+                          </div>
+                          <div style={styles.shiftActions}>
+                            <button
+                              type="button"
+                              style={styles.removeButton}
+                              onClick={() => removeShift(day, index)}
+                              disabled={workHours[day].shifts.length === 1}
+                            >
+                              Remove
+                            </button>
+                          </div>
                         </div>
                       ))}
                       <button type="button" style={styles.ghostButton} onClick={() => addShift(day)}>
@@ -605,10 +609,13 @@ const styles = {
   primaryButton: { padding: '.75rem 1rem', borderRadius: '8px', border: 'none', background: '#10b981', color: '#fff', fontWeight: 700, cursor: 'pointer' },
   secondaryButton: { padding: '.75rem 1rem', borderRadius: '8px', border: '1px solid #10b981', background: '#fff', color: '#047857', fontWeight: 600, cursor: 'pointer' },
   ghostButton: { padding: '.4rem .65rem', borderRadius: '8px', border: '1px dashed #6ee7b7', background: '#ecfdf5', color: '#047857', fontWeight: 600, cursor: 'pointer' },
+  removeButton: { padding: '.38rem .65rem', borderRadius: '8px', border: '1px solid #fca5a5', background: '#fef2f2', color: '#b91c1c', fontWeight: 600, cursor: 'pointer' },
   error: { margin: 0, color: '#b91c1c' },
   helper: { margin: 0, color: '#6b7280', fontSize: '.9rem' },
   hoursGrid: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px,1fr))', gap: '.75rem', marginTop: '.75rem' },
   dayCard: { border: '1px solid #d1fae5', borderRadius: '10px', padding: '.75rem', display: 'flex', flexDirection: 'column', gap: '.5rem' },
   dayHeader: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' },
-  shiftRow: { display: 'grid', gridTemplateColumns: '1fr auto 1fr auto', gap: '.5rem', alignItems: 'center' },
+  shiftBlock: { border: '1px solid #d1fae5', borderRadius: '8px', padding: '.5rem', background: '#ffffff' },
+  shiftRow: { display: 'grid', gridTemplateColumns: 'minmax(0,1fr) auto minmax(0,1fr)', gap: '.5rem', alignItems: 'center' },
+  shiftActions: { display: 'flex', justifyContent: 'flex-end', marginTop: '.45rem' },
 };

@@ -274,37 +274,7 @@ export default function ProviderDashboard({ onBack }) {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
         const values = toProviderHoursRows(hours);
-
-        const payloadOptions = [
-          {
-            action: 'saveProviderAvailability',
-            replaceRange: 'ProviderAvailability!A2:D8',
-            values,
-          },
-          {
-            action: 'saveProviderHours',
-            replaceRange: 'ProviderAvailability!A2:D8',
-            values,
-          },
-          {
-            action: 'saveProviderHours',
-            replaceRange: 'ProviderSettings!A2:D8',
-            values,
-          },
-          {
-            action: 'saveProviderHours',
-            replaceRange: 'Provider Settings!A2:D8',
-            values,
-          },
-          {
-            action: 'saveProviderAvailability',
-            providerAvailability: values,
-          },
-          {
-            action: 'saveProviderHours',
-            providerHours: values,
-          },
-        ];
+        const payloadOptions = buildProviderHoursPayloads({ values, hours });
 
         for (const payload of payloadOptions) {
           const result = await postToWriteEndpoint(payload);
@@ -621,6 +591,74 @@ function parseWriteEndpointBody(responseBody) {
 
     return { ok: true, error: '' };
   }
+}
+
+function buildProviderHoursPayloads({ values, hours }) {
+  const ranges = [
+    'ProviderAvailability!A2:D8',
+    'ProviderAvailability!A1:D8',
+    'ProviderSettings!A2:D8',
+    'Provider Settings!A2:D8',
+  ];
+
+  const actions = [
+    'saveProviderAvailability',
+    'saveProviderHours',
+    'saveAvailability',
+    'updateProviderAvailability',
+    'updateProviderHours',
+    'setProviderAvailability',
+    'setProviderHours',
+    'saveProviderSettings',
+  ];
+
+  const payloads = [];
+
+  // Most common Apps Script pattern: action + replaceRange + values
+  actions.forEach((action) => {
+    ranges.forEach((replaceRange) => {
+      payloads.push({ action, replaceRange, values });
+    });
+  });
+
+  // Alternate field names commonly used in scripts.
+  actions.forEach((action) => {
+    ranges.forEach((range) => {
+      payloads.push({ action, range, values });
+      payloads.push({ action, targetRange: range, values });
+      payloads.push({ action, range, rows: values });
+      payloads.push({ action, range, data: values });
+    });
+  });
+
+  // Object-based payload variants.
+  actions.forEach((action) => {
+    payloads.push({ action, providerAvailability: values });
+    payloads.push({ action, providerHours: values });
+    payloads.push({ action, availability: values });
+    payloads.push({ action, workHours: hours });
+    payloads.push({ action, hours });
+  });
+
+  // Generic no-action payload fallback for endpoints that infer operation by fields.
+  ranges.forEach((range) => {
+    payloads.push({ replaceRange: range, values });
+    payloads.push({ range, values });
+  });
+
+  return dedupePayloads(payloads);
+}
+
+function dedupePayloads(payloads) {
+  const seen = new Set();
+  return payloads.filter((payload) => {
+    const key = JSON.stringify(payload);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function parseWorkHoursRows(rows) {

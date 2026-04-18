@@ -296,6 +296,14 @@ export default function ProviderDashboard({ onBack }) {
             replaceRange: 'Provider Settings!A2:D8',
             values,
           },
+          {
+            action: 'saveProviderAvailability',
+            providerAvailability: values,
+          },
+          {
+            action: 'saveProviderHours',
+            providerHours: values,
+          },
         ];
 
         for (const payload of payloadOptions) {
@@ -345,7 +353,13 @@ export default function ProviderDashboard({ onBack }) {
         return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
       }
 
-      return { ok: true, error: '' };
+      const responseBody = await response.text();
+      const parsedResult = parseWriteEndpointBody(responseBody);
+      if (parsedResult.ok) {
+        return { ok: true, error: '' };
+      }
+
+      return { ok: false, error: parsedResult.error };
     } catch (corsError) {
       try {
         // Fallback for some Apps Script deployments that reject CORS preflight.
@@ -355,13 +369,13 @@ export default function ProviderDashboard({ onBack }) {
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload),
         });
-        return { ok: true, error: 'opaque no-cors response' };
+        return { ok: false, error: 'Opaque no-cors response; could not verify write success.' };
       } catch (fallbackError) {
         try {
           const beaconBody = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
           const sent = navigator.sendBeacon(SHEETS_WRITE_ENDPOINT, beaconBody);
           if (sent) {
-            return { ok: true, error: 'sendBeacon fallback submitted' };
+            return { ok: false, error: 'sendBeacon submitted; delivery not verifiable.' };
           }
         } catch (beaconError) {
           return { ok: false, error: beaconError?.message || fallbackError?.message || corsError?.message || 'failed to fetch' };
@@ -577,6 +591,36 @@ function StatCard({ label, value }) {
       <p style={styles.statValue}>{value}</p>
     </div>
   );
+}
+
+function parseWriteEndpointBody(responseBody) {
+  const trimmed = String(responseBody || '').trim();
+  if (!trimmed) {
+    return { ok: true, error: '' };
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    const status = String(parsed?.status || '').toLowerCase();
+    const result = String(parsed?.result || '').toLowerCase();
+
+    if (parsed?.ok === true || parsed?.success === true || status === 'success' || result === 'success') {
+      return { ok: true, error: '' };
+    }
+
+    if (parsed?.ok === false || parsed?.success === false || parsed?.error) {
+      return { ok: false, error: String(parsed.error || parsed.message || 'Write endpoint rejected payload.') };
+    }
+
+    return { ok: true, error: '' };
+  } catch (parseError) {
+    const lowered = trimmed.toLowerCase();
+    if (lowered.includes('error') || lowered.includes('invalid') || lowered.includes('unsupported')) {
+      return { ok: false, error: trimmed };
+    }
+
+    return { ok: true, error: '' };
+  }
 }
 
 function parseWorkHoursRows(rows) {

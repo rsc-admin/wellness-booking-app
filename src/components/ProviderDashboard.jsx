@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
 const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
+const SHEETS_WRITE_ENDPOINT = process.env.REACT_APP_SHEETS_WRITE_URL || '';
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -205,6 +206,29 @@ export default function ProviderDashboard({ onBack }) {
 
   const appendManualBookingToSheet = async (booking) => {
     try {
+      if (SHEETS_WRITE_ENDPOINT) {
+        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'appendBooking',
+            booking: {
+              id: `MANUAL-${Date.now()}`,
+              serviceName: booking.service,
+              date: booking.date,
+              time: booking.time,
+              nickname: booking.customerName,
+              phone: 'N/A',
+              status: booking.status,
+              notes: booking.notes || '',
+              source: 'Manual',
+            },
+          }),
+        });
+
+        return response.ok;
+      }
+
       const payload = {
         values: [[
           `MANUAL-${Date.now()}`,
@@ -253,6 +277,24 @@ export default function ProviderDashboard({ onBack }) {
 
   const appendWorkHoursToSheet = async (hours) => {
     try {
+      if (SHEETS_WRITE_ENDPOINT) {
+        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'saveProviderHours',
+            hours,
+          }),
+        });
+
+        if (!response.ok) {
+          const body = await response.text();
+          return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
+        }
+
+        return { ok: true, error: '' };
+      }
+
       const values = WEEK_DAYS.map((day) => [
         `Work Hours ${day}`,
         serializeWorkHoursValue(hours[day]),

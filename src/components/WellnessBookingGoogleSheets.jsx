@@ -19,6 +19,7 @@ export default function WellnessBookingGoogleSheets() {
 
   const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
   const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
+  const SHEETS_WRITE_ENDPOINT = process.env.REACT_APP_SHEETS_WRITE_URL || '';
   const SETTINGS_RANGE = 'ProviderSettings!A:D';
   const SETTINGS_RANGE_FALLBACK = 'Provider Settings!A:D';
 
@@ -148,6 +149,31 @@ export default function WellnessBookingGoogleSheets() {
   // Add booking to Google Sheets
   const addBookingToGoogleSheets = async (bookingData) => {
     try {
+      if (SHEETS_WRITE_ENDPOINT) {
+        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            action: 'appendBooking',
+            booking: {
+              id: `AUTO-${String(bookings.length + 1).padStart(3, '0')}`,
+              serviceName: selectedService.name,
+              date: selectedDate.toISOString().split('T')[0],
+              time: selectedTime,
+              nickname: formData.nickname,
+              phone: formData.phone,
+              status: 'Confirmed',
+              notes: '',
+              source: 'App',
+            },
+          }),
+        });
+
+        return response.ok;
+      }
+
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A1:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
       
       const bookingId = `AUTO-${String(bookings.length + 1).padStart(3, '0')}`;

@@ -47,6 +47,7 @@ https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit
 ```
 3. Copy the long alphanumeric string between `/d/` and `/edit`
    - Example: `1a2b3c4d5e6f7g8h9i0j1k2l3m4n5o6p`
+   - Actual: '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII'
 
 **Save this ID** - you'll need it in the next step.
 

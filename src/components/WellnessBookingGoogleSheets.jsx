@@ -12,12 +12,16 @@ export default function WellnessBookingGoogleSheets() {
     phone: '',
   });
   const [bookings, setBookings] = useState([]);
+  const [providerHours, setProviderHours] = useState({});
   const [loading, setLoading] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [sheetConfigured, setSheetConfigured] = useState(false);
 
   const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
   const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
+  const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
+  const SETTINGS_RANGE = 'ProviderSettings!A:D';
+  const SETTINGS_RANGE_FALLBACK = 'Provider Settings!A:D';
 
   const services = [
     {
@@ -86,25 +90,32 @@ export default function WellnessBookingGoogleSheets() {
     '04:00 PM',
   ];
 
-  // Fetch bookings from Google Sheets on load
-  useEffect(() => {
-    if (SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID_HERE' && API_KEY !== 'YOUR_GOOGLE_API_KEY_HERE') {
-      fetchBookingsFromGoogleSheets();
-      setSheetConfigured(true);
-    }
-  }, []);
+  // Fetch bookings + provider settings from Google Sheets
+  const fetchProviderSettingsRows = async () => {
+    const primaryUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE)}?key=${API_KEY}`;
+    const fallbackUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE_FALLBACK)}?key=${API_KEY}`;
 
-  // Fetch bookings from Google Sheets
-  const fetchBookingsFromGoogleSheets = async () => {
+    const primaryResponse = await fetch(primaryUrl);
+    const primaryData = await primaryResponse.json();
+    if (primaryData.values) {
+      return primaryData.values;
+    }
+
+    const fallbackResponse = await fetch(fallbackUrl);
+    const fallbackData = await fallbackResponse.json();
+    return fallbackData.values || [];
+  };
+
+  const fetchDataFromGoogleSheets = async () => {
     setLoading(true);
     try {
-      const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A:G?key=${API_KEY}`;
-      const response = await fetch(url);
-      const data = await response.json();
+      const bookingsUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A:G?key=${API_KEY}`;
+      const bookingsResponse = await fetch(bookingsUrl);
+      const bookingsData = await bookingsResponse.json();
 
-      if (data.values && data.values.length > 1) {
+      if (bookingsData.values && bookingsData.values.length > 1) {
         // Skip header row
-        const fetchedBookings = data.values.slice(1).map((row) => ({
+        const fetchedBookings = bookingsData.values.slice(1).map((row) => ({
           date: row[2], // Date column
           time: row[3], // Time column
           serviceName: row[1], // Service name
@@ -113,6 +124,12 @@ export default function WellnessBookingGoogleSheets() {
         }));
         setBookings(fetchedBookings);
       }
+
+      const settingsRows = await fetchProviderSettingsRows();
+      if (settingsRows.length > 1) {
+        const parsedProviderHours = parseProviderHoursRows(settingsRows);
+        setProviderHours(parsedProviderHours);
+      }
     } catch (error) {
       console.error('Error fetching bookings:', error);
     } finally {
@@ -120,9 +137,37 @@ export default function WellnessBookingGoogleSheets() {
     }
   };
 
+  // Fetch bookings from Google Sheets on load
+  useEffect(() => {
+    if (SHEET_ID !== 'YOUR_GOOGLE_SHEET_ID_HERE' && API_KEY !== 'YOUR_GOOGLE_API_KEY_HERE') {
+      fetchDataFromGoogleSheets();
+      setSheetConfigured(true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // Add booking to Google Sheets
   const addBookingToGoogleSheets = async (bookingData) => {
     try {
+      if (SHEETS_WRITE_ENDPOINT) {
+        const result = await postToWriteEndpoint({
+          action: 'appendBooking',
+          booking: {
+            id: `AUTO-${String(bookings.length + 1).padStart(3, '0')}`,
+            serviceName: selectedService.name,
+            date: selectedDate.toISOString().split('T')[0],
+            time: selectedTime,
+            nickname: formData.nickname,
+            phone: formData.phone,
+            status: 'Confirmed',
+            notes: '',
+            source: 'App',
+          },
+        });
+
+        return result.ok;
+      }
+
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A1:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
       
       const bookingId = `AUTO-${String(bookings.length + 1).padStart(3, '0')}`;
@@ -152,9 +197,52 @@ export default function WellnessBookingGoogleSheets() {
     }
   };
 
+  const postToWriteEndpoint = async (payload) => {
+    try {
+      const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      return { ok: response.ok };
+    } catch (corsError) {
+      try {
+        await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        return { ok: true };
+      } catch (fallbackError) {
+        try {
+          const beaconBody = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
+          const sent = navigator.sendBeacon(SHEETS_WRITE_ENDPOINT, beaconBody);
+          if (sent) {
+            return { ok: true };
+          }
+        } catch (beaconError) {
+          console.error('Write endpoint failed:', beaconError || fallbackError || corsError);
+          return { ok: false };
+        }
+
+        console.error('Write endpoint failed:', fallbackError || corsError);
+        return { ok: false };
+      }
+    }
+  };
+
   // Check if a time slot is available
   const isSlotAvailable = (date, time, serviceName) => {
     if (!date || !serviceName) return false;
+
+    if (!isWithinProviderHours(date, time)) return false;
 
     const dateStr = date.toISOString().split('T')[0];
     const bookedCount = bookings.filter(
@@ -173,6 +261,26 @@ export default function WellnessBookingGoogleSheets() {
     return bookings.filter(
       (b) => b.date === dateStr && b.time === time && b.serviceName === serviceName
     ).length;
+  };
+
+  const isWithinProviderHours = (date, time) => {
+    const dayName = date.toLocaleDateString('en-US', { weekday: 'long' });
+    const daySettings = providerHours[dayName];
+
+    if (!daySettings) {
+      return true; // no settings found, do not block availability
+    }
+
+    if (daySettings.status === 'closed') {
+      return false;
+    }
+
+    const slotMinutes = toMinutes(time);
+    if (daySettings.startMinutes === null || daySettings.endMinutes === null || slotMinutes === null) {
+      return true;
+    }
+
+    return slotMinutes >= daySettings.startMinutes && slotMinutes <= daySettings.endMinutes;
   };
 
   // Get calendar days
@@ -200,6 +308,51 @@ export default function WellnessBookingGoogleSheets() {
       month: 'short',
       day: 'numeric',
     });
+  };
+
+  const parseProviderHoursRows = (rows) => {
+    const parsed = {};
+    rows.slice(1).forEach((row) => {
+      const day = row[0];
+      const startTime = row[1];
+      const endTime = row[2];
+      const status = (row[3] || '').toLowerCase();
+
+      if (!day) return;
+
+      parsed[day] = {
+        status: status === 'closed' ? 'closed' : 'open',
+        startMinutes: toMinutes(startTime),
+        endMinutes: toMinutes(endTime),
+      };
+    });
+
+    return parsed;
+  };
+
+  const toMinutes = (timeValue) => {
+    if (!timeValue) return null;
+    const normalized = String(timeValue).trim().toUpperCase();
+
+    // HH:MM AM/PM
+    const twelveHourMatch = normalized.match(/^(\d{1,2}):(\d{2})\s?(AM|PM)$/);
+    if (twelveHourMatch) {
+      let hour = Number(twelveHourMatch[1]);
+      const minute = Number(twelveHourMatch[2]);
+      const period = twelveHourMatch[3];
+
+      if (period === 'PM' && hour < 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+      return hour * 60 + minute;
+    }
+
+    // HH:MM 24-hour
+    const twentyFourMatch = normalized.match(/^(\d{1,2}):(\d{2})$/);
+    if (twentyFourMatch) {
+      return Number(twentyFourMatch[1]) * 60 + Number(twentyFourMatch[2]);
+    }
+
+    return null;
   };
 
   const handleFormChange = (e) => {

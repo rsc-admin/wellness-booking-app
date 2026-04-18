@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
 const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
 const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
+const PROVIDER_SETTINGS_RANGES = ['ProviderAvailability!A:D', 'ProviderSettings!A:D', 'Provider Settings!A:D'];
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -93,13 +94,12 @@ export default function ProviderDashboard({ onBack }) {
     setLoadingData(true);
     setStatusMessage('');
     try {
-      const [bookingsResponse, settingsResponse] = await Promise.all([
+      const [bookingsResponse, settingsRows] = await Promise.all([
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A:J?key=${API_KEY}`),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Provider%20Settings!A:D?key=${API_KEY}`),
+        fetchProviderSettingsRows(),
       ]);
 
       const bookingsData = await bookingsResponse.json();
-      const settingsData = await settingsResponse.json();
 
       if (Array.isArray(bookingsData.values) && bookingsData.values.length > 1) {
         const mappedBookings = bookingsData.values.slice(1).map((row, index) => ({
@@ -115,8 +115,8 @@ export default function ProviderDashboard({ onBack }) {
         setBookings(mappedBookings);
       }
 
-      if (Array.isArray(settingsData.values) && settingsData.values.length > 0) {
-        setWorkHours(parseWorkHoursRows(settingsData.values));
+      if (Array.isArray(settingsRows) && settingsRows.length > 0) {
+        setWorkHours(parseWorkHoursRows(settingsRows));
       }
     } catch (fetchError) {
       setStatusMessage('Could not sync from Google Sheets. Using local dashboard data.');
@@ -273,11 +273,39 @@ export default function ProviderDashboard({ onBack }) {
   const appendWorkHoursToSheet = async (hours) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        return postToWriteEndpoint({
-          action: 'saveProviderHours',
-          replaceRange: 'ProviderSettings!A2:D8',
-          values: toProviderHoursRows(hours),
-        });
+        const values = toProviderHoursRows(hours);
+
+        const payloadOptions = [
+          {
+            action: 'saveProviderAvailability',
+            replaceRange: 'ProviderAvailability!A2:D8',
+            values,
+          },
+          {
+            action: 'saveProviderHours',
+            replaceRange: 'ProviderAvailability!A2:D8',
+            values,
+          },
+          {
+            action: 'saveProviderHours',
+            replaceRange: 'ProviderSettings!A2:D8',
+            values,
+          },
+          {
+            action: 'saveProviderHours',
+            replaceRange: 'Provider Settings!A2:D8',
+            values,
+          },
+        ];
+
+        for (const payload of payloadOptions) {
+          const result = await postToWriteEndpoint(payload);
+          if (result.ok) {
+            return result;
+          }
+        }
+
+        return { ok: false, error: 'Write endpoint rejected provider availability updates.' };
       }
       return {
         ok: false,
@@ -286,6 +314,22 @@ export default function ProviderDashboard({ onBack }) {
     } catch (saveError) {
       return { ok: false, error: saveError?.message || 'unknown network error' };
     }
+  };
+
+  const fetchProviderSettingsRows = async () => {
+    for (const range of PROVIDER_SETTINGS_RANGES) {
+      const encodedRange = encodeURIComponent(range);
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodedRange}?key=${API_KEY}`
+      );
+
+      const data = await response.json();
+      if (Array.isArray(data.values) && data.values.length > 0) {
+        return data.values;
+      }
+    }
+
+    return [];
   };
 
   const postToWriteEndpoint = async (payload) => {

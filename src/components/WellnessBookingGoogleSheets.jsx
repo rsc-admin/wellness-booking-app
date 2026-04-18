@@ -20,8 +20,7 @@ export default function WellnessBookingGoogleSheets() {
   const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
   const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
   const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
-  const SETTINGS_RANGE = 'ProviderSettings!A:D';
-  const SETTINGS_RANGE_FALLBACK = 'Provider Settings!A:D';
+  const SETTINGS_RANGES = ['ProviderAvailability!A:D', 'ProviderSettings!A:D', 'Provider Settings!A:D'];
 
   const services = [
     {
@@ -92,18 +91,17 @@ export default function WellnessBookingGoogleSheets() {
 
   // Fetch bookings + provider settings from Google Sheets
   const fetchProviderSettingsRows = async () => {
-    const primaryUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE)}?key=${API_KEY}`;
-    const fallbackUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE_FALLBACK)}?key=${API_KEY}`;
-
-    const primaryResponse = await fetch(primaryUrl);
-    const primaryData = await primaryResponse.json();
-    if (primaryData.values) {
-      return primaryData.values;
+    for (const range of SETTINGS_RANGES) {
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(range)}?key=${API_KEY}`
+      );
+      const data = await response.json();
+      if (data.values) {
+        return data.values;
+      }
     }
 
-    const fallbackResponse = await fetch(fallbackUrl);
-    const fallbackData = await fallbackResponse.json();
-    return fallbackData.values || [];
+    return [];
   };
 
   const fetchDataFromGoogleSheets = async () => {

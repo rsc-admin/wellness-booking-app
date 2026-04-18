@@ -3,6 +3,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
 const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
 const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
+const PROVIDER_SETTINGS_RANGES = ['ProviderAvailability!A:D', 'ProviderSettings!A:D', 'Provider Settings!A:D'];
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -93,13 +94,12 @@ export default function ProviderDashboard({ onBack }) {
     setLoadingData(true);
     setStatusMessage('');
     try {
-      const [bookingsResponse, settingsResponse] = await Promise.all([
+      const [bookingsResponse, settingsRows] = await Promise.all([
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A:J?key=${API_KEY}`),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Provider%20Settings!A:D?key=${API_KEY}`),
+        fetchProviderSettingsRows(),
       ]);
 
       const bookingsData = await bookingsResponse.json();
-      const settingsData = await settingsResponse.json();
 
       if (Array.isArray(bookingsData.values) && bookingsData.values.length > 1) {
         const mappedBookings = bookingsData.values.slice(1).map((row, index) => ({
@@ -115,8 +115,8 @@ export default function ProviderDashboard({ onBack }) {
         setBookings(mappedBookings);
       }
 
-      if (Array.isArray(settingsData.values) && settingsData.values.length > 0) {
-        setWorkHours(parseWorkHoursRows(settingsData.values));
+      if (Array.isArray(settingsRows) && settingsRows.length > 0) {
+        setWorkHours(parseWorkHoursRows(settingsRows));
       }
     } catch (fetchError) {
       setStatusMessage('Could not sync from Google Sheets. Using local dashboard data.');
@@ -273,11 +273,17 @@ export default function ProviderDashboard({ onBack }) {
   const appendWorkHoursToSheet = async (hours) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        return postToWriteEndpoint({
-          action: 'saveProviderHours',
-          replaceRange: 'ProviderSettings!A2:D8',
-          values: toProviderHoursRows(hours),
-        });
+        const values = toProviderHoursRows(hours);
+        const payloadOptions = buildProviderHoursPayloads({ values, hours });
+
+        for (const payload of payloadOptions) {
+          const result = await postToWriteEndpoint(payload);
+          if (result.ok) {
+            return result;
+          }
+        }
+
+        return { ok: false, error: 'Write endpoint rejected provider availability updates.' };
       }
       return {
         ok: false,
@@ -286,6 +292,22 @@ export default function ProviderDashboard({ onBack }) {
     } catch (saveError) {
       return { ok: false, error: saveError?.message || 'unknown network error' };
     }
+  };
+
+  const fetchProviderSettingsRows = async () => {
+    for (const range of PROVIDER_SETTINGS_RANGES) {
+      const encodedRange = encodeURIComponent(range);
+      const response = await fetch(
+        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodedRange}?key=${API_KEY}`
+      );
+
+      const data = await response.json();
+      if (Array.isArray(data.values) && data.values.length > 0) {
+        return data.values;
+      }
+    }
+
+    return [];
   };
 
   const postToWriteEndpoint = async (payload) => {
@@ -301,7 +323,13 @@ export default function ProviderDashboard({ onBack }) {
         return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
       }
 
-      return { ok: true, error: '' };
+      const responseBody = await response.text();
+      const parsedResult = parseWriteEndpointBody(responseBody);
+      if (parsedResult.ok) {
+        return { ok: true, error: '' };
+      }
+
+      return { ok: false, error: parsedResult.error };
     } catch (corsError) {
       try {
         // Fallback for some Apps Script deployments that reject CORS preflight.
@@ -311,13 +339,13 @@ export default function ProviderDashboard({ onBack }) {
           headers: { 'Content-Type': 'text/plain;charset=utf-8' },
           body: JSON.stringify(payload),
         });
-        return { ok: true, error: 'opaque no-cors response' };
+        return { ok: false, error: 'Opaque no-cors response; could not verify write success.' };
       } catch (fallbackError) {
         try {
           const beaconBody = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
           const sent = navigator.sendBeacon(SHEETS_WRITE_ENDPOINT, beaconBody);
           if (sent) {
-            return { ok: true, error: 'sendBeacon fallback submitted' };
+            return { ok: false, error: 'sendBeacon submitted; delivery not verifiable.' };
           }
         } catch (beaconError) {
           return { ok: false, error: beaconError?.message || fallbackError?.message || corsError?.message || 'failed to fetch' };
@@ -533,6 +561,104 @@ function StatCard({ label, value }) {
       <p style={styles.statValue}>{value}</p>
     </div>
   );
+}
+
+function parseWriteEndpointBody(responseBody) {
+  const trimmed = String(responseBody || '').trim();
+  if (!trimmed) {
+    return { ok: true, error: '' };
+  }
+
+  try {
+    const parsed = JSON.parse(trimmed);
+    const status = String(parsed?.status || '').toLowerCase();
+    const result = String(parsed?.result || '').toLowerCase();
+
+    if (parsed?.ok === true || parsed?.success === true || status === 'success' || result === 'success') {
+      return { ok: true, error: '' };
+    }
+
+    if (parsed?.ok === false || parsed?.success === false || parsed?.error) {
+      return { ok: false, error: String(parsed.error || parsed.message || 'Write endpoint rejected payload.') };
+    }
+
+    return { ok: true, error: '' };
+  } catch (parseError) {
+    const lowered = trimmed.toLowerCase();
+    if (lowered.includes('error') || lowered.includes('invalid') || lowered.includes('unsupported')) {
+      return { ok: false, error: trimmed };
+    }
+
+    return { ok: true, error: '' };
+  }
+}
+
+function buildProviderHoursPayloads({ values, hours }) {
+  const ranges = [
+    'ProviderAvailability!A2:D8',
+    'ProviderAvailability!A1:D8',
+    'ProviderSettings!A2:D8',
+    'Provider Settings!A2:D8',
+  ];
+
+  const actions = [
+    'saveProviderAvailability',
+    'saveProviderHours',
+    'saveAvailability',
+    'updateProviderAvailability',
+    'updateProviderHours',
+    'setProviderAvailability',
+    'setProviderHours',
+    'saveProviderSettings',
+  ];
+
+  const payloads = [];
+
+  // Most common Apps Script pattern: action + replaceRange + values
+  actions.forEach((action) => {
+    ranges.forEach((replaceRange) => {
+      payloads.push({ action, replaceRange, values });
+    });
+  });
+
+  // Alternate field names commonly used in scripts.
+  actions.forEach((action) => {
+    ranges.forEach((range) => {
+      payloads.push({ action, range, values });
+      payloads.push({ action, targetRange: range, values });
+      payloads.push({ action, range, rows: values });
+      payloads.push({ action, range, data: values });
+    });
+  });
+
+  // Object-based payload variants.
+  actions.forEach((action) => {
+    payloads.push({ action, providerAvailability: values });
+    payloads.push({ action, providerHours: values });
+    payloads.push({ action, availability: values });
+    payloads.push({ action, workHours: hours });
+    payloads.push({ action, hours });
+  });
+
+  // Generic no-action payload fallback for endpoints that infer operation by fields.
+  ranges.forEach((range) => {
+    payloads.push({ replaceRange: range, values });
+    payloads.push({ range, values });
+  });
+
+  return dedupePayloads(payloads);
+}
+
+function dedupePayloads(payloads) {
+  const seen = new Set();
+  return payloads.filter((payload) => {
+    const key = JSON.stringify(payload);
+    if (seen.has(key)) {
+      return false;
+    }
+    seen.add(key);
+    return true;
+  });
 }
 
 function parseWorkHoursRows(rows) {

@@ -275,8 +275,8 @@ export default function ProviderDashboard({ onBack }) {
       if (SHEETS_WRITE_ENDPOINT) {
         return postToWriteEndpoint({
           action: 'saveProviderHours',
-          hours,
-          rows: toProviderHoursRows(hours),
+          replaceRange: 'ProviderSettings!A2:D8',
+          values: toProviderHoursRows(hours),
         });
       }
       return {
@@ -601,21 +601,11 @@ function toProviderHoursRows(hours) {
   return WEEK_DAYS.map((day) => {
     const dayHours = hours[day];
     if (!dayHours?.isOpen || !dayHours.shifts?.length) {
-      return {
-        day,
-        startTime: '',
-        endTime: '',
-        status: 'Closed',
-      };
+      return [day, '', '', 'Closed'];
     }
 
     const firstShift = dayHours.shifts[0];
-    return {
-      day,
-      startTime: formatTimeForSheet(firstShift.start),
-      endTime: formatTimeForSheet(firstShift.end),
-      status: 'Open',
-    };
+    return [day, formatTimeForSheet(firstShift.start), formatTimeForSheet(firstShift.end), 'Open'];
   });
 }
 

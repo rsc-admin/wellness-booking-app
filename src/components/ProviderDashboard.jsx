@@ -95,7 +95,7 @@ export default function ProviderDashboard({ onBack }) {
     try {
       const [bookingsResponse, settingsResponse] = await Promise.all([
         fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A:J?key=${API_KEY}`),
-        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Provider%20Settings!A:B?key=${API_KEY}`),
+        fetch(`https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Provider%20Settings!A:D?key=${API_KEY}`),
       ]);
 
       const bookingsData = await bookingsResponse.json();
@@ -276,29 +276,13 @@ export default function ProviderDashboard({ onBack }) {
         return postToWriteEndpoint({
           action: 'saveProviderHours',
           hours,
+          rows: toProviderHoursRows(hours),
         });
       }
-
-      const values = WEEK_DAYS.map((day) => [
-        `Work Hours ${day}`,
-        serializeWorkHoursValue(hours[day]),
-      ]);
-
-      const response = await fetch(
-        `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Provider%20Settings!A1:append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&key=${API_KEY}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ values }),
-        }
-      );
-
-      if (!response.ok) {
-        const body = await response.text();
-        return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
-      }
-
-      return { ok: true, error: '' };
+      return {
+        ok: false,
+        error: 'No write endpoint configured. Set REACT_APP_SHEETS_WRITE_URL to save provider hours.',
+      };
     } catch (saveError) {
       return { ok: false, error: saveError?.message || 'unknown network error' };
     }
@@ -554,6 +538,43 @@ function StatCard({ label, value }) {
 function parseWorkHoursRows(rows) {
   const parsed = JSON.parse(JSON.stringify(DEFAULT_WORK_HOURS));
 
+  // Preferred format:
+  // Day | StartTime | EndTime | Status
+  const header = rows[0] || [];
+  const isDayGrid =
+    String(header[0] || '').toLowerCase() === 'day' &&
+    String(header[3] || '').toLowerCase() === 'status';
+
+  if (isDayGrid) {
+    rows.slice(1).forEach((row) => {
+      const day = row[0];
+      const startTime = row[1];
+      const endTime = row[2];
+      const status = String(row[3] || '').toLowerCase();
+
+      if (!parsed[day]) {
+        return;
+      }
+
+      if (status === 'closed') {
+        parsed[day] = { ...parsed[day], isOpen: false };
+        return;
+      }
+
+      parsed[day] = {
+        isOpen: true,
+        shifts: [
+          {
+            start: convertTo24Hour(startTime),
+            end: convertTo24Hour(endTime),
+          },
+        ],
+      };
+    });
+
+    return parsed;
+  }
+
   rows.forEach((row) => {
     const setting = row[0] || '';
     const value = row[1] || '';
@@ -576,15 +597,26 @@ function parseWorkHoursRows(rows) {
   return parsed;
 }
 
-function serializeWorkHoursValue(dayHours) {
-  if (!dayHours.isOpen) {
-    return 'Closed';
-  }
+function toProviderHoursRows(hours) {
+  return WEEK_DAYS.map((day) => {
+    const dayHours = hours[day];
+    if (!dayHours?.isOpen || !dayHours.shifts?.length) {
+      return {
+        day,
+        startTime: '',
+        endTime: '',
+        status: 'Closed',
+      };
+    }
 
-  // Human-readable + easy to parse back:
-  // Open|09:00-12:00,13:00-17:00
-  const ranges = dayHours.shifts.map((shift) => `${shift.start}-${shift.end}`).join(',');
-  return `Open|${ranges}`;
+    const firstShift = dayHours.shifts[0];
+    return {
+      day,
+      startTime: formatTimeForSheet(firstShift.start),
+      endTime: formatTimeForSheet(firstShift.end),
+      status: 'Open',
+    };
+  });
 }
 
 function parseWorkHoursValue(value) {
@@ -647,6 +679,15 @@ function formatTimeForSheet(time24h) {
 }
 
 function convertTo24Hour(time12h) {
+  if (!time12h) {
+    return '09:00';
+  }
+
+  const twentyFourMatch = String(time12h).trim().match(/^(\d{1,2}):(\d{2})$/);
+  if (twentyFourMatch) {
+    return `${String(Number(twentyFourMatch[1])).padStart(2, '0')}:${twentyFourMatch[2]}`;
+  }
+
   const normalized = time12h.toUpperCase().replace(/\s/g, '');
   const match = normalized.match(/^(\d{1,2}):(\d{2})(AM|PM)$/);
   if (!match) {

@@ -100,6 +100,7 @@ export default function ProviderDashboard({ onBack }) {
       ]);
 
       const bookingsData = await bookingsResponse.json();
+      let loadedBookingsFromSheet = false;
 
       if (Array.isArray(bookingsData.values) && bookingsData.values.length > 1) {
         const mappedBookings = bookingsData.values.slice(1).map((row, index) => ({
@@ -113,10 +114,18 @@ export default function ProviderDashboard({ onBack }) {
           source: row[9] || 'Online',
         }));
         setBookings(mappedBookings);
+        loadedBookingsFromSheet = true;
       }
 
       if (Array.isArray(settingsRows) && settingsRows.length > 0) {
         setWorkHours(parseWorkHoursRows(settingsRows));
+      }
+
+      if (!loadedBookingsFromSheet && SHEETS_WRITE_ENDPOINT) {
+        const endpointBookings = await fetchBookingsFromWriteEndpoint();
+        if (endpointBookings.length > 0) {
+          setBookings(endpointBookings);
+        }
       }
     } catch (fetchError) {
       setStatusMessage('Could not sync from Google Sheets. Using local dashboard data.');
@@ -273,8 +282,9 @@ export default function ProviderDashboard({ onBack }) {
   const appendWorkHoursToSheet = async (hours) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        const values = toProviderHoursRows(hours);
-        const payloadOptions = buildProviderHoursPayloads({ values, hours });
+        const availabilityValues = toProviderAvailabilityRows(hours);
+        const legacyValues = toProviderHoursRows(hours);
+        const payloadOptions = buildProviderHoursPayloads({ availabilityValues, legacyValues, hours });
 
         for (const payload of payloadOptions) {
           const result = await postToWriteEndpoint(payload);
@@ -304,6 +314,48 @@ export default function ProviderDashboard({ onBack }) {
       const data = await response.json();
       if (Array.isArray(data.values) && data.values.length > 0) {
         return data.values;
+      }
+    }
+
+    return [];
+  };
+
+  const fetchBookingsFromWriteEndpoint = async () => {
+    const readPayloads = [
+      { action: 'getBookings' },
+      { action: 'fetchBookings' },
+      { action: 'listBookings' },
+      { action: 'getProviderDashboardData' },
+    ];
+
+    for (const payload of readPayloads) {
+      try {
+        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload),
+        });
+
+        if (!response.ok) {
+          continue;
+        }
+
+        const body = await response.json().catch(() => null);
+        const rows = extractBookingRows(body);
+        if (rows.length > 0) {
+          return rows.map((row, index) => ({
+            id: `${row.id || row.bookingId || row[0] || 'endpoint'}-${index}`,
+            customerName: row.customerName || row.nickname || row[4] || 'Unknown',
+            service: row.service || row.serviceName || row[1] || 'Service',
+            date: row.date || row[2] || '',
+            time: row.time || row[3] || '',
+            status: row.status || row[6] || 'Confirmed',
+            notes: row.notes || row[7] || '',
+            source: row.source || row[9] || 'Online',
+          }));
+        }
+      } catch (readError) {
+        // keep trying fallback payloads
       }
     }
 
@@ -593,12 +645,36 @@ function parseWriteEndpointBody(responseBody) {
   }
 }
 
-function buildProviderHoursPayloads({ values, hours }) {
-  const ranges = [
+function extractBookingRows(responseBody) {
+  if (!responseBody) {
+    return [];
+  }
+
+  if (Array.isArray(responseBody?.bookings)) {
+    return responseBody.bookings;
+  }
+
+  if (Array.isArray(responseBody?.data?.bookings)) {
+    return responseBody.data.bookings;
+  }
+
+  if (Array.isArray(responseBody?.rows)) {
+    return responseBody.rows;
+  }
+
+  return [];
+}
+
+function buildProviderHoursPayloads({ availabilityValues, legacyValues, hours }) {
+  const legacyRanges = [
     'ProviderAvailability!A2:D8',
     'ProviderAvailability!A1:D8',
     'ProviderSettings!A2:D8',
     'Provider Settings!A2:D8',
+  ];
+  const availabilityRanges = [
+    `ProviderAvailability!A2:E${availabilityValues.length + 1}`,
+    'ProviderAvailability!A:E',
   ];
 
   const actions = [
@@ -616,34 +692,50 @@ function buildProviderHoursPayloads({ values, hours }) {
 
   // Most common Apps Script pattern: action + replaceRange + values
   actions.forEach((action) => {
-    ranges.forEach((replaceRange) => {
-      payloads.push({ action, replaceRange, values });
+    availabilityRanges.forEach((replaceRange) => {
+      payloads.push({ action, replaceRange, values: availabilityValues });
+    });
+    legacyRanges.forEach((replaceRange) => {
+      payloads.push({ action, replaceRange, values: legacyValues });
     });
   });
 
   // Alternate field names commonly used in scripts.
   actions.forEach((action) => {
-    ranges.forEach((range) => {
-      payloads.push({ action, range, values });
-      payloads.push({ action, targetRange: range, values });
-      payloads.push({ action, range, rows: values });
-      payloads.push({ action, range, data: values });
+    availabilityRanges.forEach((range) => {
+      payloads.push({ action, range, values: availabilityValues });
+      payloads.push({ action, targetRange: range, values: availabilityValues });
+      payloads.push({ action, range, rows: availabilityValues });
+      payloads.push({ action, range, data: availabilityValues });
+    });
+    legacyRanges.forEach((range) => {
+      payloads.push({ action, range, values: legacyValues });
+      payloads.push({ action, targetRange: range, values: legacyValues });
+      payloads.push({ action, range, rows: legacyValues });
+      payloads.push({ action, range, data: legacyValues });
     });
   });
 
   // Object-based payload variants.
   actions.forEach((action) => {
-    payloads.push({ action, providerAvailability: values });
-    payloads.push({ action, providerHours: values });
-    payloads.push({ action, availability: values });
+    payloads.push({ action, providerAvailability: availabilityValues });
+    payloads.push({ action, providerHours: availabilityValues });
+    payloads.push({ action, availability: availabilityValues });
+    payloads.push({ action, values: availabilityValues });
+    payloads.push({ action, providerHours: legacyValues });
+    payloads.push({ action, availability: legacyValues });
     payloads.push({ action, workHours: hours });
     payloads.push({ action, hours });
   });
 
   // Generic no-action payload fallback for endpoints that infer operation by fields.
-  ranges.forEach((range) => {
-    payloads.push({ replaceRange: range, values });
-    payloads.push({ range, values });
+  availabilityRanges.forEach((range) => {
+    payloads.push({ replaceRange: range, values: availabilityValues });
+    payloads.push({ range, values: availabilityValues });
+  });
+  legacyRanges.forEach((range) => {
+    payloads.push({ replaceRange: range, values: legacyValues });
+    payloads.push({ range, values: legacyValues });
   });
 
   return dedupePayloads(payloads);
@@ -670,6 +762,56 @@ function parseWorkHoursRows(rows) {
   const isDayGrid =
     String(header[0] || '').toLowerCase() === 'day' &&
     String(header[3] || '').toLowerCase() === 'status';
+  const isAvailabilityGrid =
+    String(header[0] || '').toLowerCase() === 'day' &&
+    String(header[1] || '').toLowerCase() === 'rangeorder' &&
+    String(header[4] || '').toLowerCase() === 'status';
+
+  if (isAvailabilityGrid) {
+    const grouped = {};
+    rows.slice(1).forEach((row) => {
+      const day = row[0];
+      if (!parsed[day]) return;
+
+      const rangeOrder = Number(row[1] || 1);
+      const startTime = row[2];
+      const endTime = row[3];
+      const status = String(row[4] || '').toLowerCase();
+
+      if (!grouped[day]) {
+        grouped[day] = { status: 'open', ranges: [] };
+      }
+
+      if (status === 'closed') {
+        grouped[day] = { status: 'closed', ranges: [] };
+        return;
+      }
+
+      grouped[day].ranges.push({
+        order: Number.isFinite(rangeOrder) ? rangeOrder : grouped[day].ranges.length + 1,
+        start: convertTo24Hour(startTime),
+        end: convertTo24Hour(endTime),
+      });
+    });
+
+    Object.entries(grouped).forEach(([day, data]) => {
+      if (data.status === 'closed') {
+        parsed[day] = { ...parsed[day], isOpen: false };
+        return;
+      }
+
+      const shifts = data.ranges
+        .sort((left, right) => left.order - right.order)
+        .map((range) => ({ start: range.start, end: range.end }))
+        .filter((range) => range.start && range.end);
+
+      if (shifts.length > 0) {
+        parsed[day] = { isOpen: true, shifts };
+      }
+    });
+
+    return parsed;
+  }
 
   if (isDayGrid) {
     rows.slice(1).forEach((row) => {
@@ -732,6 +874,23 @@ function toProviderHoursRows(hours) {
 
     const firstShift = dayHours.shifts[0];
     return [day, formatTimeForSheet(firstShift.start), formatTimeForSheet(firstShift.end), 'Open'];
+  });
+}
+
+function toProviderAvailabilityRows(hours) {
+  return WEEK_DAYS.flatMap((day) => {
+    const dayHours = hours[day];
+    if (!dayHours?.isOpen || !dayHours.shifts?.length) {
+      return [[day, 1, '', '', 'Closed']];
+    }
+
+    return dayHours.shifts.map((shift, index) => [
+      day,
+      index + 1,
+      formatTimeForSheet(shift.start),
+      formatTimeForSheet(shift.end),
+      'Open',
+    ]);
   });
 }
 

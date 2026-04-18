@@ -3,7 +3,8 @@ import React, { useEffect, useMemo, useState } from 'react';
 const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
 const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
 const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
-const PROVIDER_SETTINGS_RANGES = ['ProviderAvailability!A:D', 'ProviderSettings!A:D', 'Provider Settings!A:D'];
+const PROVIDER_SETTINGS_RANGES = ['ProviderAvailability!A:G', 'ProviderSettings!A:D', 'Provider Settings!A:D'];
+const DEFAULT_BUFFER_MINUTES = 30;
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -50,6 +51,7 @@ export default function ProviderDashboard({ onBack }) {
 
   const [bookings, setBookings] = useState(FALLBACK_BOOKINGS);
   const [workHours, setWorkHours] = useState(DEFAULT_WORK_HOURS);
+  const [bufferMinutes, setBufferMinutes] = useState(DEFAULT_BUFFER_MINUTES);
 
   const [loadingData, setLoadingData] = useState(false);
   const [savingBooking, setSavingBooking] = useState(false);
@@ -72,9 +74,10 @@ export default function ProviderDashboard({ onBack }) {
   useEffect(() => {
     if (isLoggedIn) {
       void fetchProviderData();
-      const localHours = loadWorkHoursFromLocalBackup();
-      if (localHours) {
-        setWorkHours(localHours);
+      const localSettings = loadWorkHoursFromLocalBackup();
+      if (localSettings?.workHours) {
+        setWorkHours(localSettings.workHours);
+        setBufferMinutes(localSettings.bufferMinutes ?? DEFAULT_BUFFER_MINUTES);
       }
     }
   }, [isLoggedIn]);
@@ -118,7 +121,9 @@ export default function ProviderDashboard({ onBack }) {
       }
 
       if (Array.isArray(settingsRows) && settingsRows.length > 0) {
-        setWorkHours(parseWorkHoursRows(settingsRows));
+        const parsedSettings = parseWorkHoursRows(settingsRows);
+        setWorkHours(parsedSettings.workHours);
+        setBufferMinutes(parsedSettings.bufferMinutes);
       }
 
       if (!loadedBookingsFromSheet && SHEETS_WRITE_ENDPOINT) {
@@ -265,7 +270,7 @@ export default function ProviderDashboard({ onBack }) {
 
   const handleWorkHoursSave = async () => {
     setSavingHours(true);
-    const result = await appendWorkHoursToSheet(workHours);
+    const result = await appendWorkHoursToSheet(workHours, bufferMinutes);
     setSavingHours(false);
 
     if (result.ok) {
@@ -273,18 +278,23 @@ export default function ProviderDashboard({ onBack }) {
       return;
     }
 
-    saveWorkHoursToLocalBackup(workHours);
+    saveWorkHoursToLocalBackup({ workHours, bufferMinutes });
     setStatusMessage(
       `Could not save to Google Sheets (${result.error}). Saved locally on this device instead.`
     );
   };
 
-  const appendWorkHoursToSheet = async (hours) => {
+  const appendWorkHoursToSheet = async (hours, nextBufferMinutes) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        const availabilityValues = toProviderAvailabilityRows(hours);
+        const availabilityValues = toProviderAvailabilityRows(hours, nextBufferMinutes);
         const legacyValues = toProviderHoursRows(hours);
-        const payloadOptions = buildProviderHoursPayloads({ availabilityValues, legacyValues, hours });
+        const payloadOptions = buildProviderHoursPayloads({
+          availabilityValues,
+          legacyValues,
+          hours,
+          bufferMinutes: nextBufferMinutes,
+        });
 
         for (const payload of payloadOptions) {
           const result = await postToWriteEndpoint(payload);
@@ -443,7 +453,12 @@ export default function ProviderDashboard({ onBack }) {
             <h1 style={styles.title}>Serenity Provider Hub</h1>
             <p style={styles.subtitle}>Bookings, work hours, and manual entries in one place.</p>
           </div>
-          <button type="button" style={styles.secondaryButton} onClick={onBack}>Sign out</button>
+              <div style={styles.inlineActions}>
+                <button type="button" style={styles.secondaryButton} onClick={() => void fetchProviderData()} disabled={loadingData}>
+                  {loadingData ? 'Refreshing…' : 'Refresh'}
+                </button>
+                <button type="button" style={styles.secondaryButton} onClick={onBack}>Sign out</button>
+              </div>
         </div>
 
         {statusMessage ? <p style={styles.banner}>{statusMessage}</p> : null}
@@ -487,6 +502,19 @@ export default function ProviderDashboard({ onBack }) {
         {activeTab === 'hours' ? (
           <div style={styles.panel}>
             <h2 style={styles.panelTitle}>Work hours</h2>
+            <div style={styles.inline}>
+              <label style={styles.label} htmlFor="buffer-minutes">Buffer between appointments</label>
+              <select
+                id="buffer-minutes"
+                value={bufferMinutes}
+                onChange={(event) => setBufferMinutes(Number(event.target.value))}
+                style={styles.input}
+              >
+                {[0, 15, 30, 45, 60].map((value) => (
+                  <option key={value} value={value}>{value} minutes</option>
+                ))}
+              </select>
+            </div>
             <button type="button" style={styles.primaryButton} onClick={handleWorkHoursSave} disabled={savingHours}>
               {savingHours ? 'Saving…' : 'Save work hours'}
             </button>
@@ -665,7 +693,7 @@ function extractBookingRows(responseBody) {
   return [];
 }
 
-function buildProviderHoursPayloads({ availabilityValues, legacyValues, hours }) {
+function buildProviderHoursPayloads({ availabilityValues, legacyValues, hours, bufferMinutes }) {
   const legacyRanges = [
     'ProviderAvailability!A2:D8',
     'ProviderAvailability!A1:D8',
@@ -673,8 +701,8 @@ function buildProviderHoursPayloads({ availabilityValues, legacyValues, hours })
     'Provider Settings!A2:D8',
   ];
   const availabilityRanges = [
-    `ProviderAvailability!A2:E${availabilityValues.length + 1}`,
-    'ProviderAvailability!A:E',
+    `ProviderAvailability!A2:F${availabilityValues.length + 1}`,
+    'ProviderAvailability!A:F',
   ];
 
   const actions = [
@@ -726,6 +754,7 @@ function buildProviderHoursPayloads({ availabilityValues, legacyValues, hours })
     payloads.push({ action, availability: legacyValues });
     payloads.push({ action, workHours: hours });
     payloads.push({ action, hours });
+    payloads.push({ action, bufferMinutes });
   });
 
   // Generic no-action payload fallback for endpoints that infer operation by fields.
@@ -755,6 +784,7 @@ function dedupePayloads(payloads) {
 
 function parseWorkHoursRows(rows) {
   const parsed = JSON.parse(JSON.stringify(DEFAULT_WORK_HOURS));
+  let detectedBufferMinutes = DEFAULT_BUFFER_MINUTES;
 
   // Preferred format:
   // Day | StartTime | EndTime | Status
@@ -777,6 +807,10 @@ function parseWorkHoursRows(rows) {
       const startTime = row[2];
       const endTime = row[3];
       const status = String(row[4] || '').toLowerCase();
+      const rowBuffer = Number(row[5] || row[6]);
+      if (Number.isFinite(rowBuffer) && rowBuffer >= 0) {
+        detectedBufferMinutes = rowBuffer;
+      }
 
       if (!grouped[day]) {
         grouped[day] = { status: 'open', ranges: [] };
@@ -810,7 +844,7 @@ function parseWorkHoursRows(rows) {
       }
     });
 
-    return parsed;
+    return { workHours: parsed, bufferMinutes: detectedBufferMinutes };
   }
 
   if (isDayGrid) {
@@ -840,7 +874,7 @@ function parseWorkHoursRows(rows) {
       };
     });
 
-    return parsed;
+    return { workHours: parsed, bufferMinutes: detectedBufferMinutes };
   }
 
   rows.forEach((row) => {
@@ -862,7 +896,7 @@ function parseWorkHoursRows(rows) {
     }
   });
 
-  return parsed;
+  return { workHours: parsed, bufferMinutes: detectedBufferMinutes };
 }
 
 function toProviderHoursRows(hours) {
@@ -877,11 +911,11 @@ function toProviderHoursRows(hours) {
   });
 }
 
-function toProviderAvailabilityRows(hours) {
+function toProviderAvailabilityRows(hours, bufferMinutes) {
   return WEEK_DAYS.flatMap((day) => {
     const dayHours = hours[day];
     if (!dayHours?.isOpen || !dayHours.shifts?.length) {
-      return [[day, 1, '', '', 'Closed']];
+      return [[day, 1, '', '', 'Closed', bufferMinutes]];
     }
 
     return dayHours.shifts.map((shift, index) => [
@@ -890,6 +924,7 @@ function toProviderAvailabilityRows(hours) {
       formatTimeForSheet(shift.start),
       formatTimeForSheet(shift.end),
       'Open',
+      index === 0 ? bufferMinutes : '',
     ]);
   });
 }
@@ -984,9 +1019,9 @@ function convertTo24Hour(time12h) {
   return `${String(hours).padStart(2, '0')}:${minutes}`;
 }
 
-function saveWorkHoursToLocalBackup(hours) {
+function saveWorkHoursToLocalBackup(payload) {
   try {
-    window.localStorage.setItem('provider_work_hours_backup', JSON.stringify(hours));
+    window.localStorage.setItem('provider_work_hours_backup', JSON.stringify(payload));
   } catch (error) {
     // ignore local storage failures
   }
@@ -1014,6 +1049,7 @@ const styles = {
   panel: { marginTop: '1rem', border: '1px solid #d1fae5', borderRadius: '12px', padding: '1rem' },
   panelTitle: { margin: '0 0 .75rem', color: '#065f46' },
   header: { display: 'flex', justifyContent: 'space-between', gap: '1rem', flexWrap: 'wrap' },
+  inlineActions: { display: 'flex', gap: '.5rem', alignItems: 'center' },
   banner: { margin: '.75rem 0 0', padding: '.6rem .75rem', background: '#ecfdf5', border: '1px solid #a7f3d0', borderRadius: '8px', color: '#065f46' },
   tabs: { display: 'flex', gap: '.5rem', marginTop: '1rem' },
   tab: { padding: '.6rem 1rem', borderRadius: '8px', border: '1px solid #a7f3d0', background: '#fff', color: '#047857', fontWeight: 600, cursor: 'pointer' },

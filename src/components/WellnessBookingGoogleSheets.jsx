@@ -16,8 +16,8 @@ export default function WellnessBookingGoogleSheets() {
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [sheetConfigured, setSheetConfigured] = useState(false);
 
-  const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE'; // User will replace this
-  const API_KEY = 'YOUR_GOOGLE_API_KEY_HERE'; // User will replace this
+  const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
+  const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
 
   const services = [
     {

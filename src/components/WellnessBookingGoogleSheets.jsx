@@ -13,6 +13,7 @@ export default function WellnessBookingGoogleSheets() {
   });
   const [bookings, setBookings] = useState([]);
   const [providerHours, setProviderHours] = useState({});
+  const [providerBufferMinutes, setProviderBufferMinutes] = useState(30);
   const [loading, setLoading] = useState(false);
   const [bookingConfirmed, setBookingConfirmed] = useState(false);
   const [sheetConfigured, setSheetConfigured] = useState(false);
@@ -20,8 +21,7 @@ export default function WellnessBookingGoogleSheets() {
   const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
   const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
   const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
-  const SETTINGS_RANGE = 'ProviderSettings!A:D';
-  const SETTINGS_RANGE_FALLBACK = 'Provider Settings!A:D';
+  const PROVIDER_AVAILABILITY_RANGE = 'ProviderAvailability!A:G';
 
   const services = [
     {
@@ -92,18 +92,11 @@ export default function WellnessBookingGoogleSheets() {
 
   // Fetch bookings + provider settings from Google Sheets
   const fetchProviderSettingsRows = async () => {
-    const primaryUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE)}?key=${API_KEY}`;
-    const fallbackUrl = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(SETTINGS_RANGE_FALLBACK)}?key=${API_KEY}`;
-
-    const primaryResponse = await fetch(primaryUrl);
-    const primaryData = await primaryResponse.json();
-    if (primaryData.values) {
-      return primaryData.values;
-    }
-
-    const fallbackResponse = await fetch(fallbackUrl);
-    const fallbackData = await fallbackResponse.json();
-    return fallbackData.values || [];
+    const response = await fetch(
+      `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/${encodeURIComponent(PROVIDER_AVAILABILITY_RANGE)}?key=${API_KEY}`
+    );
+    const data = await response.json();
+    return data.values || [];
   };
 
   const fetchDataFromGoogleSheets = async () => {
@@ -127,8 +120,9 @@ export default function WellnessBookingGoogleSheets() {
 
       const settingsRows = await fetchProviderSettingsRows();
       if (settingsRows.length > 1) {
-        const parsedProviderHours = parseProviderHoursRows(settingsRows);
-        setProviderHours(parsedProviderHours);
+        const parsedProviderSettings = parseProviderHoursRows(settingsRows);
+        setProviderHours(parsedProviderSettings.hours);
+        setProviderBufferMinutes(parsedProviderSettings.bufferMinutes);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
@@ -245,6 +239,18 @@ export default function WellnessBookingGoogleSheets() {
     if (!isWithinProviderHours(date, time)) return false;
 
     const dateStr = date.toISOString().split('T')[0];
+    const slotMinutes = toMinutes(time);
+    const hasBufferConflict = bookings.some((booking) => {
+      if (booking.date !== dateStr) return false;
+      const bookedMinutes = toMinutes(booking.time);
+      if (slotMinutes === null || bookedMinutes === null) return false;
+      return Math.abs(bookedMinutes - slotMinutes) < providerBufferMinutes;
+    });
+
+    if (hasBufferConflict) {
+      return false;
+    }
+
     const bookedCount = bookings.filter(
       (b) => b.date === dateStr && b.time === time && b.serviceName === serviceName
     ).length;
@@ -276,7 +282,21 @@ export default function WellnessBookingGoogleSheets() {
     }
 
     const slotMinutes = toMinutes(time);
-    if (daySettings.startMinutes === null || daySettings.endMinutes === null || slotMinutes === null) {
+    if (slotMinutes === null) {
+      return true;
+    }
+
+    if (Array.isArray(daySettings.ranges) && daySettings.ranges.length > 0) {
+      return daySettings.ranges.some(
+        (range) =>
+          range.startMinutes !== null &&
+          range.endMinutes !== null &&
+          slotMinutes >= range.startMinutes &&
+          slotMinutes <= range.endMinutes
+      );
+    }
+
+    if (daySettings.startMinutes === null || daySettings.endMinutes === null) {
       return true;
     }
 
@@ -312,6 +332,52 @@ export default function WellnessBookingGoogleSheets() {
 
   const parseProviderHoursRows = (rows) => {
     const parsed = {};
+    let detectedBufferMinutes = 30;
+    const header = rows[0] || [];
+    const isAvailabilityGrid =
+      String(header[0] || '').toLowerCase() === 'day' &&
+      String(header[1] || '').toLowerCase() === 'rangeorder' &&
+      String(header[4] || '').toLowerCase() === 'status';
+
+    if (isAvailabilityGrid) {
+      rows.slice(1).forEach((row) => {
+        const day = row[0];
+        const rangeOrder = Number(row[1] || 1);
+        const startTime = row[2];
+        const endTime = row[3];
+        const status = (row[4] || '').toLowerCase();
+        const rowBuffer = Number(row[5] || row[6]);
+
+        if (!day) return;
+        if (!parsed[day]) {
+          parsed[day] = { status: 'open', ranges: [] };
+        }
+        if (Number.isFinite(rowBuffer) && rowBuffer >= 0) {
+          detectedBufferMinutes = rowBuffer;
+        }
+
+        if (status === 'closed') {
+          parsed[day] = { status: 'closed', ranges: [] };
+          return;
+        }
+
+        parsed[day].ranges.push({
+          order: Number.isFinite(rangeOrder) ? rangeOrder : parsed[day].ranges.length + 1,
+          startMinutes: toMinutes(startTime),
+          endMinutes: toMinutes(endTime),
+        });
+      });
+
+      Object.keys(parsed).forEach((day) => {
+        const dayData = parsed[day];
+        if (dayData.status === 'closed') {
+          return;
+        }
+        dayData.ranges.sort((left, right) => left.order - right.order);
+      });
+      return { hours: parsed, bufferMinutes: detectedBufferMinutes };
+    }
+
     rows.slice(1).forEach((row) => {
       const day = row[0];
       const startTime = row[1];
@@ -327,7 +393,7 @@ export default function WellnessBookingGoogleSheets() {
       };
     });
 
-    return parsed;
+    return { hours: parsed, bufferMinutes: detectedBufferMinutes };
   };
 
   const toMinutes = (timeValue) => {

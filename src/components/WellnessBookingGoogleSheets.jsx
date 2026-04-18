@@ -19,7 +19,7 @@ export default function WellnessBookingGoogleSheets() {
 
   const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
   const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
-  const SHEETS_WRITE_ENDPOINT = process.env.REACT_APP_SHEETS_WRITE_URL || '';
+  const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
   const SETTINGS_RANGE = 'ProviderSettings!A:D';
   const SETTINGS_RANGE_FALLBACK = 'Provider Settings!A:D';
 
@@ -150,28 +150,22 @@ export default function WellnessBookingGoogleSheets() {
   const addBookingToGoogleSheets = async (bookingData) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
+        const result = await postToWriteEndpoint({
+          action: 'appendBooking',
+          booking: {
+            id: `AUTO-${String(bookings.length + 1).padStart(3, '0')}`,
+            serviceName: selectedService.name,
+            date: selectedDate.toISOString().split('T')[0],
+            time: selectedTime,
+            nickname: formData.nickname,
+            phone: formData.phone,
+            status: 'Confirmed',
+            notes: '',
+            source: 'App',
           },
-          body: JSON.stringify({
-            action: 'appendBooking',
-            booking: {
-              id: `AUTO-${String(bookings.length + 1).padStart(3, '0')}`,
-              serviceName: selectedService.name,
-              date: selectedDate.toISOString().split('T')[0],
-              time: selectedTime,
-              nickname: formData.nickname,
-              phone: formData.phone,
-              status: 'Confirmed',
-              notes: '',
-              source: 'App',
-            },
-          }),
         });
 
-        return response.ok;
+        return result.ok;
       }
 
       const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEET_ID}/values/Bookings!A1:append?valueInputOption=USER_ENTERED&key=${API_KEY}`;
@@ -200,6 +194,47 @@ export default function WellnessBookingGoogleSheets() {
     } catch (error) {
       console.error('Error adding booking:', error);
       return false;
+    }
+  };
+
+  const postToWriteEndpoint = async (payload) => {
+    try {
+      const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
+      });
+
+      return { ok: response.ok };
+    } catch (corsError) {
+      try {
+        await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: {
+            'Content-Type': 'text/plain;charset=utf-8',
+          },
+          body: JSON.stringify(payload),
+        });
+
+        return { ok: true };
+      } catch (fallbackError) {
+        try {
+          const beaconBody = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
+          const sent = navigator.sendBeacon(SHEETS_WRITE_ENDPOINT, beaconBody);
+          if (sent) {
+            return { ok: true };
+          }
+        } catch (beaconError) {
+          console.error('Write endpoint failed:', beaconError || fallbackError || corsError);
+          return { ok: false };
+        }
+
+        console.error('Write endpoint failed:', fallbackError || corsError);
+        return { ok: false };
+      }
     }
   };
 

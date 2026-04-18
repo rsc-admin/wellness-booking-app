@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 
 const SHEET_ID = '11gL7tepkPa6AlM996WGsSQKCax4REETFcalEyA3gnII';
 const API_KEY = 'AIzaSyDxncQSCK-IJNDVmp_mZsPgAFH_lHPacJ4';
-const SHEETS_WRITE_ENDPOINT = process.env.REACT_APP_SHEETS_WRITE_URL || '';
+const SHEETS_WRITE_ENDPOINT = (process.env.REACT_APP_SHEETS_WRITE_URL || '').trim();
 
 const WEEK_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
@@ -207,26 +207,21 @@ export default function ProviderDashboard({ onBack }) {
   const appendManualBookingToSheet = async (booking) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'appendBooking',
-            booking: {
-              id: `MANUAL-${Date.now()}`,
-              serviceName: booking.service,
-              date: booking.date,
-              time: booking.time,
-              nickname: booking.customerName,
-              phone: 'N/A',
-              status: booking.status,
-              notes: booking.notes || '',
-              source: 'Manual',
-            },
-          }),
+        const result = await postToWriteEndpoint({
+          action: 'appendBooking',
+          booking: {
+            id: `MANUAL-${Date.now()}`,
+            serviceName: booking.service,
+            date: booking.date,
+            time: booking.time,
+            nickname: booking.customerName,
+            phone: 'N/A',
+            status: booking.status,
+            notes: booking.notes || '',
+            source: 'Manual',
+          },
         });
-
-        return response.ok;
+        return result.ok;
       }
 
       const payload = {
@@ -278,21 +273,10 @@ export default function ProviderDashboard({ onBack }) {
   const appendWorkHoursToSheet = async (hours) => {
     try {
       if (SHEETS_WRITE_ENDPOINT) {
-        const response = await fetch(SHEETS_WRITE_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'saveProviderHours',
-            hours,
-          }),
+        return postToWriteEndpoint({
+          action: 'saveProviderHours',
+          hours,
         });
-
-        if (!response.ok) {
-          const body = await response.text();
-          return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
-        }
-
-        return { ok: true, error: '' };
       }
 
       const values = WEEK_DAYS.map((day) => [
@@ -317,6 +301,46 @@ export default function ProviderDashboard({ onBack }) {
       return { ok: true, error: '' };
     } catch (saveError) {
       return { ok: false, error: saveError?.message || 'unknown network error' };
+    }
+  };
+
+  const postToWriteEndpoint = async (payload) => {
+    try {
+      const response = await fetch(SHEETS_WRITE_ENDPOINT, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        const body = await response.text();
+        return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
+      }
+
+      return { ok: true, error: '' };
+    } catch (corsError) {
+      try {
+        // Fallback for some Apps Script deployments that reject CORS preflight.
+        await fetch(SHEETS_WRITE_ENDPOINT, {
+          method: 'POST',
+          mode: 'no-cors',
+          headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+          body: JSON.stringify(payload),
+        });
+        return { ok: true, error: 'opaque no-cors response' };
+      } catch (fallbackError) {
+        try {
+          const beaconBody = new Blob([JSON.stringify(payload)], { type: 'text/plain;charset=utf-8' });
+          const sent = navigator.sendBeacon(SHEETS_WRITE_ENDPOINT, beaconBody);
+          if (sent) {
+            return { ok: true, error: 'sendBeacon fallback submitted' };
+          }
+        } catch (beaconError) {
+          return { ok: false, error: beaconError?.message || fallbackError?.message || corsError?.message || 'failed to fetch' };
+        }
+
+        return { ok: false, error: fallbackError?.message || corsError?.message || 'failed to fetch' };
+      }
     }
   };
 

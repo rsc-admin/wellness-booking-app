@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import './App.css';
 import WellnessBookingGoogleSheets from './components/WellnessBookingGoogleSheets';
+import ProviderDashboard from './components/ProviderDashboard';
 
 function App() {
   const [userType, setUserType] = useState(null); // 'customer' or 'provider'
@@ -109,34 +110,7 @@ function App() {
   }
 
   if (userType === 'provider') {
-    return (
-      <div style={{ padding: '2rem', textAlign: 'center', fontFamily: 'Lora, serif' }}>
-        <h1>Provider Dashboard</h1>
-        <p>Coming soon! ⚙️</p>
-        <p>This section will include:</p>
-        <ul style={{ textAlign: 'left', maxWidth: '500px', margin: '1rem auto' }}>
-          <li>✅ Work hours management</li>
-          <li>📅 Booking calendar</li>
-          <li>➕ Manual booking entry (from phone calls)</li>
-          <li>📊 Dashboard overview</li>
-        </ul>
-        <button
-          onClick={() => setUserType(null)}
-          style={{
-            padding: '0.75rem 1.5rem',
-            background: '#10b981',
-            color: 'white',
-            border: 'none',
-            borderRadius: '8px',
-            cursor: 'pointer',
-            fontSize: '1rem',
-            marginTop: '2rem',
-          }}
-        >
-          ← Go Back
-        </button>
-      </div>
-    );
+    return <ProviderDashboard onBack={() => setUserType(null)} />;
   }
 }
 

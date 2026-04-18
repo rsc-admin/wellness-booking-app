@@ -70,6 +70,10 @@ export default function ProviderDashboard({ onBack }) {
   useEffect(() => {
     if (isLoggedIn) {
       void fetchProviderData();
+      const localHours = loadWorkHoursFromLocalBackup();
+      if (localHours) {
+        setWorkHours(localHours);
+      }
     }
   }, [isLoggedIn]);
 
@@ -233,9 +237,18 @@ export default function ProviderDashboard({ onBack }) {
 
   const handleWorkHoursSave = async () => {
     setSavingHours(true);
-    const saved = await appendWorkHoursToSheet(workHours);
+    const result = await appendWorkHoursToSheet(workHours);
     setSavingHours(false);
-    setStatusMessage(saved ? 'Work hours saved to Google Sheets.' : 'Failed to save work hours.');
+
+    if (result.ok) {
+      setStatusMessage('Work hours saved to Google Sheets.');
+      return;
+    }
+
+    saveWorkHoursToLocalBackup(workHours);
+    setStatusMessage(
+      `Could not save to Google Sheets (${result.error}). Saved locally on this device instead.`
+    );
   };
 
   const appendWorkHoursToSheet = async (hours) => {
@@ -254,9 +267,14 @@ export default function ProviderDashboard({ onBack }) {
         }
       );
 
-      return response.ok;
+      if (!response.ok) {
+        const body = await response.text();
+        return { ok: false, error: `${response.status} ${response.statusText} ${body}` };
+      }
+
+      return { ok: true, error: '' };
     } catch (saveError) {
-      return false;
+      return { ok: false, error: saveError?.message || 'unknown network error' };
     }
   };
 
@@ -582,6 +600,27 @@ function convertTo24Hour(time12h) {
   }
 
   return `${String(hours).padStart(2, '0')}:${minutes}`;
+}
+
+function saveWorkHoursToLocalBackup(hours) {
+  try {
+    window.localStorage.setItem('provider_work_hours_backup', JSON.stringify(hours));
+  } catch (error) {
+    // ignore local storage failures
+  }
+}
+
+function loadWorkHoursFromLocalBackup() {
+  try {
+    const raw = window.localStorage.getItem('provider_work_hours_backup');
+    if (!raw) {
+      return null;
+    }
+    const parsed = JSON.parse(raw);
+    return parsed;
+  } catch (error) {
+    return null;
+  }
 }
 
 const styles = {

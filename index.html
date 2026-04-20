@@ -391,6 +391,47 @@
     .muted { color: var(--muted); }
     .small { font-size: 0.9rem; }
 
+    .collapsible {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+    }
+
+    .collapsible summary {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 14px;
+      cursor: pointer;
+      font-weight: 900;
+      list-style: none;
+    }
+
+    .collapsible summary::-webkit-details-marker { display: none; }
+
+    .collapsible summary::after {
+      content: '+';
+      color: var(--red);
+      font-size: 1.2rem;
+      line-height: 1;
+    }
+
+    .collapsible[open] summary::after { content: '-'; }
+
+    .collapsible-body {
+      border-top: 1px solid var(--line);
+      padding: 14px;
+    }
+
+    .summary-meta {
+      color: var(--muted);
+      font-weight: 700;
+      font-size: 0.9rem;
+      margin-left: auto;
+    }
+
     .form-grid {
       display: grid;
       grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2977,7 +3018,13 @@
         ${pageHead('Availability & Schedule Planning', 'Providers can set weekly availability, buffer time, and block vacation, training, closures, and admin time.', provider?.name || 'Provider')}
         <div class="grid two">
           <div class="card">
-            <h3>Weekly Availability</h3>
+            <div class="item-head">
+              <h3>Weekly Availability</h3>
+              <div class="btn-row">
+                <button class="btn secondary" onclick="setAvailabilityPanels(true)">Expand all</button>
+                <button class="btn secondary" onclick="setAvailabilityPanels(false)">Collapse all</button>
+              </div>
+            </div>
             <label style="margin-bottom:14px">Effective start for this weekly schedule
               <input id="availabilityEffectiveStart" type="date" value="${editingEffectiveStart}">
               <span class="muted small">Use a future date to plan ahead. Dates before it keep using the previous schedule version.</span>
@@ -2999,10 +3046,15 @@
                   bufferMinutes: 0,
                   isActive: false
                 }];
+                const summaryText = activeRows.length
+                  ? `${activeRows.length} range${activeRows.length === 1 ? '' : 's'}`
+                  : 'Closed';
                 return html`
-                  <div class="item">
+                  <details class="collapsible" data-availability-panel="true" ${activeRows.length ? 'open' : ''}>
+                    <summary><span>${day}</span><span class="summary-meta">${summaryText}</span></summary>
+                    <div class="collapsible-body">
                     <div class="item-head">
-                      <strong>${day}</strong>
+                      <strong>${day} setup</strong>
                       <div class="btn-row">
                         <label style="display:flex;align-items:center;gap:8px;font-weight:800"><input id="avail-active-${key}" type="checkbox" ${activeRows.length ? 'checked' : ''}> Open</label>
                         <button class="btn secondary" onclick="addAvailabilityRange('${day}')">Add range</button>
@@ -3011,22 +3063,27 @@
                     <div id="avail-ranges-${key}" data-day="${day}">
                       ${renderRows.map((row, index) => renderAvailabilityRange(day, row, index)).join('')}
                     </div>
-                  </div>
+                    </div>
+                  </details>
                 `;
               }).join('')}
             </div>
             <button class="btn" style="margin-top:14px" onclick="saveProviderAvailability()">Save Availability</button>
           </div>
           <div class="card">
-            <h3>Block Time Away</h3>
-            <div class="form-grid">
-              <label>Block type<select><option>Vacation</option><option>Training</option><option>Closure</option><option>Admin</option></select></label>
-              <label>Recurring<select><option>No</option><option>Weekly</option><option>Monthly</option></select></label>
-              <label>Start date<input type="date" value="2026-05-05"></label>
-              <label>End date<input type="date" value="2026-05-12"></label>
-            </div>
-            <textarea style="margin-top:14px" placeholder="Optional provider note">Family vacation. Notify affected clients by SMS.</textarea>
-            <button class="btn" style="margin-top:14px" onclick="openConflictModal()">Preview Conflicts</button>
+            <details class="collapsible">
+              <summary><span>Block Time Away</span><span class="summary-meta">Vacation, closure, training</span></summary>
+              <div class="collapsible-body">
+                <div class="form-grid">
+                  <label>Block type<select><option>Vacation</option><option>Training</option><option>Closure</option><option>Admin</option></select></label>
+                  <label>Recurring<select><option>No</option><option>Weekly</option><option>Monthly</option></select></label>
+                  <label>Start date<input type="date" value="2026-05-05"></label>
+                  <label>End date<input type="date" value="2026-05-12"></label>
+                </div>
+                <textarea style="margin-top:14px" placeholder="Optional provider note">Family vacation. Notify affected clients by SMS.</textarea>
+                <button class="btn" style="margin-top:14px" onclick="openConflictModal()">Preview Conflicts</button>
+              </div>
+            </details>
             <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
             <div class="item-head">
               <h3>Monthly Preview</h3>
@@ -3159,6 +3216,12 @@
           </div>
         </div>
       `;
+    }
+
+    function setAvailabilityPanels(open) {
+      document.querySelectorAll('[data-availability-panel="true"]').forEach(panel => {
+        panel.open = open;
+      });
     }
 
     function addAvailabilityRange(day) {

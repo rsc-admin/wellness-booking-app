@@ -1,58 +1,76 @@
-# Serenity Wellness - Booking App
+# RedSmart Wellness - Booking App
 
-A mobile-responsive wellness services booking platform built with React and Google Sheets.
+A privacy-first wellness booking marketplace prototype with client booking, provider dashboards, admin tools, and Google Workbook sync through Google Apps Script.
 
-**Live Demo:** [Coming Soon]
+**Current Preview:** `redsmart_all_features_preview.html`
 
 ---
 
 ## 🎯 Overview
 
-Serenity Wellness is a complete booking solution for wellness service providers:
+RedSmart Wellness is being modernized from a single wellness booking app into a multi-provider platform. The current all-features HTML preview demonstrates the combined product direction: privacy-first client booking, provider scheduling, provider business tools, admin governance, and workbook-backed data.
 
 ### For Customers
-- 📱 Browse available wellness services
-- 📅 Interactive calendar showing real availability
-- ⏰ Select appointment date & time in seconds
-- ✅ Enter nickname & phone to book instantly
-- 📊 See live availability based on provider's work hours
+- 📱 Browse active, admin-approved wellness providers
+- 📅 Book without creating an account
+- 🔐 Optionally create a lightweight account with username and phone only
+- ⏰ See appointment times calculated from real provider availability, time off, existing appointments, and buffer rules
+- 📊 View account-specific bookings after SMS-style login
 
 ### For Providers
-- 🔑 Simple login dashboard
-- ⏰ Set work hours (open/close, holidays)
-- 📞 Add manual bookings from phone calls/texts
-- 📋 View all upcoming appointments
-- ✏️ Edit, cancel, or mark bookings complete
-- 📊 Dashboard with today's & weekly view
+- 🔑 Provider-scoped login/dashboard
+- ⏰ Set weekly availability with multiple ranges per weekday
+- 📆 Add effective start/end dates for availability rows
+- 🧭 Preview a real monthly schedule with Previous / Month / Next controls
+- 📞 Add offline bookings from phone, text, walk-in, or manual entries
+- 📋 View filtered appointments by source, status, payment, service, month, or custom date range
+- 💵 Enter service payment, tip, method, and paid/unpaid status from appointment details
+- 📊 Dashboard totals update from filtered appointments and payment/tip logs
+
+### For Admins
+- Approve, activate, deactivate, and review provider records
+- Separate admin area from client and provider access
+- Platform-level visibility and governance model
 
 ---
 
 ## ✨ Features
 
-### Phase 1: Booking App ✅
-- [x] Service selection (6 pre-configured services)
-- [x] Calendar with real-time availability
-- [x] Date & time selection
-- [x] Customer entry (nickname + phone)
-- [x] Google Sheets integration (data syncing)
-- [x] Mobile-responsive design
-- [x] Real booking confirmation
+### Current All-Features Preview ✅
+- [x] Role-based client, provider, and admin views
+- [x] Guest booking plus optional privacy-first client account creation
+- [x] Workbook sync through deployed Google Apps Script
+- [x] Multi-provider data model using `ProviderID`
+- [x] Provider-scoped schedules, payments, reviews, offline clients, and services
+- [x] Client-scoped "My Bookings" using `BOOKINGS.UserID`
+- [x] Real availability slots from `PROVIDER_AVAILABILITY`
+- [x] Multiple availability ranges per weekday
+- [x] Provider-entered effective start/end dates for availability rows
+- [x] 12-hour time display with 24-hour entry conversion
+- [x] Time off blocks included in availability checks
+- [x] Provider dashboard filters for source, status, payment, service, month, and date range
+- [x] Monthly schedule preview based on appointments and availability
+- [x] Appointment detail actions: payment, tip, method, notes, paid, complete, cancel
+- [x] Offline booking entry and dashboard inclusion
+- [x] Payment and tip logging through Apps Script `createPayment`
+- [x] Graceful local/demo fallback when workbook sync fails
 
-### Phase 2: Provider Dashboard 🔄 (In Progress)
-- [ ] Provider login/authentication
-- [ ] Work hours management
-- [ ] Manual booking entry (from phone calls)
-- [ ] Booking management (view/edit/cancel)
-- [ ] Dashboard overview
-- [ ] Customer lookup
+### Backend / Production Hardening 🔄
+- [ ] Replace demo PINs with production authentication
+- [ ] Persist provider notes to workbook or a proper backend table
+- [ ] Add duplicate-safe payment updates instead of append-only payment logs
+- [ ] Add SMS provider integration for real PINs, reminders, and confirmations
+- [ ] Add stronger validation and permission checks in Apps Script
+- [ ] Migrate the all-features preview into the React app structure or another production frontend
 
-### Phase 3: Advanced Features 📋 (Planned)
-- [ ] Customer profiles & history
-- [ ] Service management & customization
-- [ ] SMS/Email reminders
-- [ ] Payment processing (Stripe)
-- [ ] Analytics & reporting
-- [ ] Multi-staff support
+### Planned Platform Features 📋
+- [ ] Provider subscription billing
+- [ ] Provider onboarding workflow
+- [ ] Client booking history and favorites
+- [ ] Ratings/review reply persistence
+- [ ] Calendar integration
+- [ ] Analytics and reporting
+- [ ] Native mobile app exploration
 
 ---
 
@@ -88,14 +106,15 @@ npm start
 
 The app will open at http://localhost:3000
 
-#### Setup Google Sheets Integration
+#### Setup Google Workbook Integration
 
-Follow the detailed setup in [SETUP_GUIDE.md](docs/SETUP_GUIDE.md):
+The current preview uses Google Apps Script as the backend facade for the workbook. The active deployment URL is configured in `redsmart_all_features_preview.html`.
 
-1. Create a Google Sheet with booking data
-2. Generate a Google API Key
-3. Add your Sheet ID and API Key to the app
-4. Start receiving real bookings!
+The Apps Script actions currently used by the preview include:
+- `getUsers`, `getProviders`, `getBookings`, `getPayments`, `getRatings`, `getTimeOff`, `getOfflineBookings`, `getAvailability`
+- `createUser`, `createBooking`, `createOfflineBooking`, `createPayment`
+- `updateBooking`, `updateProvider`, `updateProviderStatus`
+- `createAvailability`, `updateAvailability`, `deleteAvailability`
 
 #### Deploy to Production
 
@@ -124,6 +143,7 @@ wellness-booking-app/
 │   ├── SETUP_GUIDE.md                       # Google Sheets setup
 │   ├── PROJECT_PLAN.md                      # Full roadmap
 │   └── GITHUB_DEPLOYMENT_GUIDE.md           # Deployment instructions
+├── redsmart_all_features_preview.html        # Current RedSmart all-features prototype
 ├── .gitignore
 ├── package.json
 ├── README.md
@@ -137,45 +157,64 @@ wellness-booking-app/
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
 | **Frontend** | React 18 | UI components & state management |
-| **Database** | Google Sheets | Booking storage (no backend needed) |
-| **API** | Google Sheets API v4 | Real-time data sync |
+| **Database** | Google Sheets / Google Workbook | Users, providers, bookings, payments, availability |
+| **API** | Google Apps Script Web App | Workbook reads/writes and action routing |
 | **Styling** | CSS + Tailwind utilities | Responsive design |
 | **Icons** | Lucide React | Beautiful UI icons |
 | **Deployment** | Vercel / Netlify | Zero-downtime hosting |
 
-### Why Google Sheets?
+### Why Google Workbook?
 ✅ Zero server costs  
-✅ No backend development needed  
 ✅ Easy for providers to view/edit directly  
 ✅ Built-in security (Google accounts)  
-✅ Scales to 10,000+ bookings  
+✅ Good for fast prototype iteration  
+✅ Apps Script gives one endpoint for controlled reads/writes  
 
 ---
 
 ## 📊 Database Schema
 
-### Google Sheets: `Bookings` tab
+The current workbook is multi-table. Column names are expected by the Apps Script and the preview normalizers.
+
+### Google Workbook: `USERS`
 ```
-A: Booking ID      (AUTO-001, AUTO-002, ...)
-B: Service Name    (Swedish Massage, Yoga, ...)
-C: Date            (YYYY-MM-DD)
-D: Time            (HH:MM AM/PM)
-E: Nickname        (Alex, Jamie, ...)
-F: Phone           (555-1234)
-G: Status          (Confirmed, Completed, Cancelled)
-H: Notes           (Optional provider notes)
-I: Created Date    (Timestamp)
-J: Source          (App/Manual)
+UserID | Username | Phone | PasswordHash | UserType | SMSVerified | CreatedDate | UpdatedDate
 ```
 
-### Google Sheets: `Provider Settings` tab
+### Google Workbook: `PROVIDERS`
 ```
-Setting            | Value
-Provider Name      | Serenity Wellness Studio
-Phone              | 555-0000
-Work Hours Monday  | 09:00 AM - 06:00 PM
-Work Hours Tuesday | 09:00 AM - 06:00 PM
-... (one row per day/setting)
+ProviderID | BusinessName | OwnerName | Email | Phone | Status | AverageRating | TotalReviews | Services | BufferTime | CreatedDate | ActivatedDate
+```
+
+### Google Workbook: `BOOKINGS`
+```
+BookingID | UserID | ProviderID | ServiceType | AppointmentDate | AppointmentTime | Duration | BookingSource | HealthNotes | Status | CreatedDate
+```
+
+### Google Workbook: `PROVIDER_AVAILABILITY`
+```
+AvailabilityID | ProviderID | DayOfWeek | StartTime | EndTime | SlotIntervalMinutes | BufferMinutes | IsActive | EffectiveStartDate | EffectiveEndDate | Notes
+```
+
+Notes:
+- Multiple rows can exist for the same provider and weekday.
+- Start and end times display in 12-hour format in the app.
+- Providers may type 24-hour times such as `14:30`; the UI converts them to `2:30 PM`.
+- Effective dates are entered by the provider in the weekly availability editor.
+
+### Google Workbook: `PAYMENTS`
+```
+PaymentID | ProviderID | BookingID | Amount | PaymentMethod | PaymentType | CreatedDate
+```
+
+### Google Workbook: `TIME_OFF`
+```
+BlockID | ProviderID | BlockType | StartDate | EndDate | RecurringPattern | RecurringEndDate | Description | CreatedDate
+```
+
+### Google Workbook: `OFFLINE_BOOKINGS`
+```
+OfflineBookingID | ProviderID | ClientName | ClientPhone | ServiceProvided | ServiceDuration | PaymentAmount | PaymentMethod | TipAmount | EntryType | DateOccurred | CreatedDate
 ```
 
 ---
@@ -206,30 +245,33 @@ Work Hours Tuesday | 09:00 AM - 06:00 PM
 
 ## 🔐 Security & Privacy
 
-- **Authentication:** Provider PIN-based login (upgradeable to OAuth)
-- **Data:** Google Sheets (encrypted in transit/at rest)
-- **API:** Read/write only to your sheet (not shareable data)
+- **Client privacy model:** Guest booking is allowed; accounts are optional and can use username + phone only
+- **Authentication:** Demo PIN/SMS-style flows in the preview; production should use real auth
+- **Data:** Google Workbook / Sheets, encrypted in transit/at rest by Google
+- **API:** Apps Script action endpoint wrapping workbook operations
 - **HTTPS:** All connections encrypted
 - **No tracking:** No analytics or user tracking
-- **GDPR:** Easy data export (Google Sheets native)
+- **Payment privacy:** Payment card processing is not stored in the prototype; only service/tip logs are recorded
 
 ---
 
 ## 📱 APIs Used
 
-### Google Sheets API v4
+### Google Apps Script Web App
 ```javascript
-// Fetch bookings
-GET https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}/values/Bookings
+// Fetch provider availability
+GET {APPS_SCRIPT_URL}?action=getAvailability
 
-// Add new booking
-POST https://sheets.googleapis.com/v4/spreadsheets/{SHEET_ID}/values/Bookings:append
+// Create/update/delete availability rows
+POST {APPS_SCRIPT_URL}?action=createAvailability
+POST {APPS_SCRIPT_URL}?action=updateAvailability
+POST {APPS_SCRIPT_URL}?action=deleteAvailability
+
+// Log service payments and tips
+POST {APPS_SCRIPT_URL}?action=createPayment
 ```
 
-**Rate Limits:**
-- 300 requests per minute (per user)
-- 60,000,000 requests per day (per project)
-- Fine for most wellness studios
+The preview still contains older Google Sheets API-era React code. The newest all-features prototype uses Apps Script because it needs multi-table reads/writes, provider-specific actions, and append/update/delete actions beyond simple booking reads.
 
 ---
 
@@ -248,11 +290,12 @@ npm install
 npm start
 ```
 
-### Bookings not syncing with Google Sheet
-1. Check your API key is valid
-2. Verify sheet name is exactly "Bookings"
-3. Check column headers match (A-J)
-4. Ensure Google Sheets API is enabled
+### Workbook not syncing through Apps Script
+1. Confirm the Apps Script web app is deployed and accessible to the app
+2. Check that the deployment URL in `redsmart_all_features_preview.html` is current
+3. Verify the workbook contains the expected tabs, especially `USERS`, `PROVIDERS`, `BOOKINGS`, `PAYMENTS`, `TIME_OFF`, `OFFLINE_BOOKINGS`, and `PROVIDER_AVAILABILITY`
+4. Confirm Apps Script actions such as `getAvailability`, `createAvailability`, `updateAvailability`, and `deleteAvailability` are deployed in the latest version
+5. Check that workbook column headers match the schema above
 
 See [SETUP_GUIDE.md](docs/SETUP_GUIDE.md#troubleshooting) for more.
 
@@ -262,14 +305,16 @@ See [SETUP_GUIDE.md](docs/SETUP_GUIDE.md#troubleshooting) for more.
 
 **Current:** Q2 2026
 - ✅ Phase 1: Customer booking app
-- 🔄 Phase 2: Provider dashboard (in progress)
+- ✅ Phase 2: Provider dashboard prototype
+- ✅ Phase 2.5: Multi-provider workbook prototype
+- 🔄 Phase 3: Production hardening and React integration
 
 **Upcoming:** Q3 2026
-- 📋 Phase 3: Advanced features
-  - Multi-staff support
-  - Payment processing
-  - SMS reminders
-  - Analytics dashboard
+- Production authentication
+- Real SMS reminders and PIN verification
+- Persistent provider notes and review replies
+- Duplicate-safe payment editing
+- Admin audit trail
 
 **Future:** Q4 2026+
 - Mobile native apps (iOS/Android)
@@ -312,6 +357,6 @@ Built with ❤️ for wellness providers
 
 ---
 
-**Version:** 1.0.0  
-**Last Updated:** April 18, 2026  
-**Status:** Active Development
+**Version:** 1.1.0-preview  
+**Last Updated:** April 19, 2026  
+**Status:** Active Development - RedSmart all-features prototype

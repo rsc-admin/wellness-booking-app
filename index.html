@@ -1,0 +1,4515 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>RedSmart Wellness - All Features Preview</title>
+  <style>
+    :root {
+      --red: #d40808;
+      --red-dark: #920707;
+      --ink: #202124;
+      --muted: #62666f;
+      --line: #e7e8ec;
+      --panel: #ffffff;
+      --soft: #f7f8fb;
+      --good: #138a43;
+      --warn: #b7791f;
+      --blue: #1b6fd8;
+      --shadow: 0 14px 35px rgba(22, 27, 34, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Arial, sans-serif;
+      color: var(--ink);
+      background: #f1f2f5;
+    }
+
+    button, input, select, textarea { font: inherit; }
+
+    .topbar {
+      min-height: 72px;
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      color: #fff;
+      background: linear-gradient(135deg, var(--red), var(--red-dark));
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      box-shadow: 0 8px 18px rgba(146, 7, 7, 0.24);
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      min-width: 0;
+    }
+
+    .menu-toggle {
+      width: 44px;
+      height: 44px;
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 8px;
+      display: none;
+      place-items: center;
+      cursor: pointer;
+      font-weight: 900;
+      font-size: 1.15rem;
+      flex: 0 0 auto;
+    }
+
+    .menu-toggle:hover {
+      background: #fff;
+      color: var(--red);
+    }
+
+    .mark {
+      width: 44px;
+      height: 44px;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--red);
+      display: grid;
+      place-items: center;
+      font-weight: 900;
+      letter-spacing: 0;
+      flex: 0 0 auto;
+    }
+
+    .brand h1 {
+      margin: 0;
+      font-size: clamp(1.15rem, 2.5vw, 1.65rem);
+      letter-spacing: 0;
+      line-height: 1.1;
+    }
+
+    .brand p {
+      margin: 4px 0 0;
+      opacity: 0.88;
+      font-size: 0.9rem;
+    }
+
+    .role-switcher {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      justify-content: flex-end;
+    }
+
+    .mobile-role-switcher {
+      display: none;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 7px;
+      margin-bottom: 16px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 10px;
+    }
+
+    .role-switcher button {
+      border: 1px solid rgba(255, 255, 255, 0.45);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 10px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+    }
+
+    .mobile-role-switcher button {
+      border: 1px solid var(--line);
+      color: var(--ink);
+      background: #f5f6f8;
+      padding: 10px 8px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 800;
+      font-size: 0.9rem;
+    }
+
+    .role-switcher button.active,
+    .role-switcher button:hover {
+      background: #fff;
+      color: var(--red);
+    }
+
+    .mobile-role-switcher button.active,
+    .mobile-role-switcher button:hover {
+      color: var(--red);
+      background: #fff1f1;
+    }
+
+    .sync-pill {
+      display: none;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      background: rgba(255, 255, 255, 0.12);
+      padding: 9px 11px;
+      border-radius: 999px;
+      font-weight: 800;
+      font-size: 0.82rem;
+      cursor: pointer;
+    }
+
+    .sync-pill.connected { background: rgba(19, 138, 67, 0.92); }
+    .sync-pill.warning { background: rgba(183, 121, 31, 0.92); }
+    .sync-pill.error { background: rgba(70, 16, 16, 0.82); }
+
+    .layout {
+      display: block;
+      min-height: calc(100vh - 72px);
+    }
+
+    .sidebar {
+      background: #fff;
+      border-bottom: 1px solid var(--line);
+      padding: 12px 24px;
+      position: sticky;
+      top: 72px;
+      z-index: 15;
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      box-shadow: 0 8px 18px rgba(22, 27, 34, 0.04);
+    }
+
+    .identity {
+      border: 1px solid #f0c8c8;
+      background: #fff7f7;
+      border-radius: 8px;
+      padding: 10px 14px;
+      min-width: 220px;
+      margin-bottom: 0;
+    }
+
+    .identity strong { display: block; }
+    .identity span { color: var(--muted); font-size: 0.9rem; }
+
+    .nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .nav button {
+      border: 0;
+      background: transparent;
+      color: var(--ink);
+      text-align: center;
+      padding: 10px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+
+    .nav button.active,
+    .nav button:hover {
+      color: var(--red);
+      background: #fff1f1;
+    }
+
+    .content {
+      padding: 28px;
+      max-width: 1440px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .page-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 16px;
+      margin-bottom: 22px;
+    }
+
+    .page-head h2 {
+      margin: 0 0 7px;
+      color: var(--red);
+      font-size: clamp(1.6rem, 3vw, 2.25rem);
+      letter-spacing: 0;
+    }
+
+    .page-head p {
+      margin: 0;
+      color: var(--muted);
+      max-width: 760px;
+      line-height: 1.5;
+    }
+
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      white-space: nowrap;
+      border-radius: 999px;
+      padding: 8px 12px;
+      color: var(--red);
+      background: #fff1f1;
+      font-weight: 800;
+      font-size: 0.88rem;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid.metrics { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+    .grid.two { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .grid.three { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 18px;
+      box-shadow: var(--shadow);
+      min-width: 0;
+    }
+
+    .metric {
+      border-left: 5px solid var(--red);
+    }
+
+    .metric .value {
+      font-size: 2rem;
+      font-weight: 900;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .metric .label {
+      color: var(--muted);
+      font-weight: 700;
+    }
+
+    .card h3 {
+      margin: 0 0 12px;
+      color: #3a3d44;
+      font-size: 1.08rem;
+    }
+
+    .table-wrap { overflow-x: auto; }
+
+    table {
+      border-collapse: collapse;
+      width: 100%;
+      min-width: 680px;
+      background: #fff;
+    }
+
+    th, td {
+      padding: 12px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: left;
+      vertical-align: top;
+    }
+
+    th {
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      color: var(--muted);
+      letter-spacing: 0.03em;
+      background: #fafafa;
+    }
+
+    .status {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 5px 9px;
+      font-weight: 900;
+      font-size: 0.76rem;
+    }
+
+    .active-status { color: var(--good); background: #eaf7ef; }
+    .pending-status { color: var(--warn); background: #fff7e5; }
+    .inactive-status { color: #787d86; background: #f0f1f3; }
+    .confirmed-status { color: var(--blue); background: #eaf2ff; }
+
+    .btn-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .btn {
+      border: 0;
+      border-radius: 8px;
+      padding: 10px 13px;
+      color: #fff;
+      background: var(--red);
+      cursor: pointer;
+      font-weight: 800;
+    }
+
+    .btn:hover { background: var(--red-dark); }
+    .btn.secondary { color: var(--ink); background: #eef0f4; }
+    .btn.secondary:hover { background: #e2e5eb; }
+    .btn.good { background: var(--good); }
+    .btn.warn { background: var(--warn); }
+    .btn.ghost { color: var(--red); background: #fff1f1; }
+
+    .list {
+      display: grid;
+      gap: 12px;
+    }
+
+    .item {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 14px;
+      background: #fff;
+    }
+
+    .item-head {
+      display: flex;
+      align-items: start;
+      justify-content: space-between;
+      gap: 12px;
+      margin-bottom: 8px;
+    }
+
+    .item strong { color: #2b2f36; }
+    .muted { color: var(--muted); }
+    .small { font-size: 0.9rem; }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+    }
+
+    label {
+      display: grid;
+      gap: 7px;
+      color: #3a3d44;
+      font-weight: 800;
+      font-size: 0.92rem;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 11px 12px;
+      border: 1px solid #cfd3dc;
+      border-radius: 8px;
+      background: #fff;
+      color: var(--ink);
+    }
+
+    textarea { min-height: 96px; resize: vertical; }
+
+    .privacy-strip {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 10px;
+      margin: 16px 0;
+    }
+
+    .privacy-strip div {
+      border: 1px solid #fad3d3;
+      background: #fff8f8;
+      border-radius: 8px;
+      padding: 12px;
+      color: #4a2222;
+      font-weight: 800;
+    }
+
+    .timeline {
+      display: grid;
+      gap: 10px;
+    }
+
+    .timeline-row {
+      display: grid;
+      grid-template-columns: 110px minmax(0, 1fr) auto;
+      gap: 12px;
+      align-items: center;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      background: #fff;
+    }
+
+    .agenda {
+      display: grid;
+      gap: 16px;
+    }
+
+    .agenda-day {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .agenda-day-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 13px 16px;
+      background: #fafafa;
+      border-bottom: 1px solid var(--line);
+    }
+
+    .agenda-date {
+      font-weight: 900;
+      color: var(--red);
+    }
+
+    .appointment {
+      display: grid;
+      grid-template-columns: 120px minmax(0, 1fr) minmax(220px, auto);
+      gap: 14px;
+      padding: 14px 16px;
+      align-items: center;
+      border-bottom: 1px solid #f0f1f3;
+    }
+
+    .appointment:last-child { border-bottom: 0; }
+
+    .appointment-time {
+      font-size: 1.1rem;
+      font-weight: 900;
+      color: #2b2f36;
+    }
+
+    .appointment-title {
+      font-weight: 900;
+      margin-bottom: 4px;
+    }
+
+    .appointment-meta {
+      color: var(--muted);
+      font-size: 0.92rem;
+      line-height: 1.35;
+    }
+
+    .appointment-actions {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: flex-end;
+      gap: 7px;
+    }
+
+    .appointment-actions .btn {
+      padding: 8px 10px;
+      font-size: 0.82rem;
+    }
+
+    .range-block {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 10px;
+      background: #fcfcfd;
+    }
+
+    .time-input-wrap {
+      display: grid;
+      gap: 6px;
+    }
+
+    .time-input-wrap input {
+      width: 100%;
+    }
+
+    .calendar-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 8px;
+    }
+
+    .booking-day-grid {
+      display: grid;
+      grid-template-columns: repeat(7, minmax(0, 1fr));
+      gap: 7px;
+      margin: 10px 0 12px;
+      max-width: 100%;
+    }
+
+    .booking-day {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 8px 4px;
+      min-width: 0;
+      cursor: pointer;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .booking-day span {
+      display: block;
+      color: var(--muted);
+      font-size: 0.68rem;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+    }
+
+    .booking-day.available {
+      border-color: #b8dfc5;
+      background: #f4fbf6;
+      color: var(--good);
+    }
+
+    .booking-day:disabled {
+      cursor: not-allowed;
+      color: #9ca0a8;
+      background: #f4f5f7;
+      opacity: 0.72;
+    }
+
+    .booking-day.selected {
+      border-color: var(--red);
+      background: #fff1f1;
+      color: var(--red);
+    }
+
+    .booking-step {
+      display: grid;
+      gap: 12px;
+    }
+
+    .calendar-weekday {
+      color: var(--muted);
+      font-weight: 900;
+      font-size: 0.78rem;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 4px;
+    }
+
+    .day {
+      min-height: 72px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      text-align: left;
+    }
+
+    button.day {
+      cursor: pointer;
+      font: inherit;
+    }
+
+    button.day:hover {
+      border-color: var(--red);
+      box-shadow: 0 8px 18px rgba(146, 7, 7, 0.12);
+    }
+
+    .day.empty {
+      border-color: transparent;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .day.blocked { border-color: #f2b4b4; background: #fff5f5; }
+    .day.available { border-color: #b8dfc5; background: #f4fbf6; }
+    .day.has-bookings { border-color: #f6cf89; background: #fffaf0; }
+    .day .num { font-weight: 900; color: var(--red); }
+    .day .note { margin-top: 8px; font-size: 0.78rem; color: var(--muted); }
+
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+      background: rgba(0, 0, 0, 0.45);
+      padding: 24px;
+      overflow: auto;
+    }
+
+    .modal.open { display: grid; place-items: start center; }
+
+    .modal-panel {
+      width: min(760px, 100%);
+      background: #fff;
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: 0 22px 70px rgba(0, 0, 0, 0.28);
+      margin-top: 40px;
+    }
+
+    .modal-title {
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 18px;
+    }
+
+    .modal-title h3 { margin: 0; color: var(--red); font-size: 1.35rem; }
+
+    .close {
+      border: 0;
+      width: 38px;
+      height: 38px;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f0f1f3;
+      color: var(--ink);
+      font-weight: 900;
+    }
+
+    .footer {
+      border-top: 1px solid var(--line);
+      margin-top: 28px;
+      padding: 18px 0 0;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+
+    .auth-wrap {
+      max-width: 1120px;
+      margin: 0 auto;
+    }
+
+    .auth-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1.15fr) minmax(320px, 0.85fr);
+      gap: 18px;
+      align-items: start;
+    }
+
+    .auth-hero {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 28px;
+      box-shadow: var(--shadow);
+    }
+
+    .auth-hero h2 {
+      color: var(--red);
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 3.2rem);
+      line-height: 1;
+      letter-spacing: 0;
+    }
+
+    .auth-hero p {
+      color: var(--muted);
+      line-height: 1.55;
+      max-width: 720px;
+      margin: 0 0 18px;
+    }
+
+    .auth-card {
+      background: #fff;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 22px;
+      box-shadow: var(--shadow);
+    }
+
+    .choice-grid {
+      display: grid;
+      gap: 12px;
+      margin-top: 18px;
+    }
+
+    .choice {
+      border: 1px solid #f0c8c8;
+      background: #fff8f8;
+      color: var(--ink);
+      border-radius: 8px;
+      padding: 14px;
+      text-align: left;
+      cursor: pointer;
+    }
+
+    .choice strong {
+      display: block;
+      color: var(--red);
+      margin-bottom: 4px;
+    }
+
+    .choice span {
+      color: var(--muted);
+      font-size: 0.92rem;
+    }
+
+    @media (max-width: 980px) {
+      .layout { grid-template-columns: 1fr; }
+      .menu-toggle { display: grid; }
+      .sidebar {
+        position: fixed;
+        z-index: 35;
+        top: 72px;
+        left: 0;
+        width: min(86vw, 320px);
+        height: calc(100vh - 72px);
+        display: block;
+        padding: 22px 18px;
+        border-right: 1px solid var(--line);
+        border-bottom: 0;
+        overflow: auto;
+        box-shadow: 18px 0 35px rgba(22, 27, 34, 0.18);
+        transform: translateX(-105%);
+        transition: transform 160ms ease;
+      }
+      .identity {
+        min-width: 0;
+        padding: 14px;
+        margin-bottom: 18px;
+      }
+      .nav {
+        display: grid;
+        gap: 7px;
+      }
+      .nav button {
+        text-align: left;
+        white-space: normal;
+      }
+      .layout.nav-open .sidebar { transform: translateX(0); }
+      .layout.nav-closed .sidebar { display: block; }
+      .sidebar-backdrop {
+        position: fixed;
+        inset: 72px 0 0;
+        z-index: 30;
+        background: rgba(22, 27, 34, 0.36);
+        display: none;
+      }
+      .layout.nav-open .sidebar-backdrop { display: block; }
+      .grid.metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .grid.two, .grid.three, .privacy-strip { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .timeline-row { grid-template-columns: 1fr; }
+      .appointment { grid-template-columns: 1fr; }
+      .auth-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 720px) {
+      .topbar {
+        min-height: 64px;
+        padding: 10px 12px;
+        gap: 8px;
+        flex-wrap: nowrap;
+      }
+      .brand { flex: 1 1 auto; min-width: 0; }
+      .brand { gap: 8px; }
+      .brand h1 {
+        font-size: 1rem;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+      }
+      .brand p { display: none; }
+      .mark, .menu-toggle { width: 40px; height: 40px; }
+      .header-actions {
+        flex: 0 0 auto;
+        gap: 6px;
+      }
+      .header-actions .role-switcher { display: none; }
+      .mobile-role-switcher { display: grid; }
+      .content { padding: 14px 12px; }
+      .page-head {
+        flex-direction: column;
+        gap: 8px;
+        margin-bottom: 14px;
+      }
+      .page-head h2 { font-size: 1.45rem; }
+      .page-head p {
+        font-size: 0.92rem;
+        line-height: 1.4;
+      }
+      .card { padding: 14px; }
+      .metric { min-height: 108px; }
+      .metric .value { font-size: 1.55rem; }
+      .metric .label { font-size: 0.88rem; }
+      .grid { gap: 12px; }
+      .modal {
+        padding: 10px;
+      }
+      .modal-panel {
+        padding: 16px;
+        margin-top: 10px;
+      }
+      .modal-title {
+        margin-bottom: 12px;
+      }
+      .booking-day-grid { gap: 5px; }
+      .booking-day {
+        padding: 7px 2px;
+        font-size: 0.82rem;
+      }
+      .footer {
+        margin-top: 18px;
+        font-size: 0.78rem;
+        line-height: 1.35;
+      }
+      .nav { grid-template-columns: 1fr; }
+      .sidebar {
+        top: 64px;
+        height: calc(100vh - 64px);
+      }
+      .sidebar-backdrop { inset: 64px 0 0; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <button class="menu-toggle" id="menuToggle" onclick="toggleSidebar()" aria-label="Open navigation" aria-expanded="true">☰</button>
+      <div class="mark">RS</div>
+      <div>
+        <h1>RedSmart Wellness</h1>
+        <p>Systems That Scale. Solutions That Stick.</p>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="sync-pill" id="syncStatus" onclick="loadGoogleWorkbook()">Workbook: not synced</button>
+      <div class="role-switcher" aria-label="Role selector">
+        <button class="active" data-role="client">Client</button>
+        <button data-role="provider">Provider</button>
+        <button data-role="admin">Admin</button>
+      </div>
+    </div>
+  </header>
+
+  <div class="layout">
+    <div class="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
+    <aside class="sidebar">
+      <div class="identity">
+        <strong id="identityName">Sunseeker</strong>
+        <span id="identityMeta">Privacy-first client account</span>
+      </div>
+      <div class="mobile-role-switcher" aria-label="Role selector">
+        <button class="active" data-role="client">Client</button>
+        <button data-role="provider">Provider</button>
+        <button data-role="admin">Admin</button>
+      </div>
+      <nav class="nav" id="nav"></nav>
+    </aside>
+
+    <main class="content">
+      <section id="client-login" class="view"></section>
+      <section id="provider-login" class="view"></section>
+      <section id="admin-login" class="view"></section>
+
+      <section id="client-dashboard" class="view"></section>
+      <section id="client-providers" class="view"></section>
+      <section id="client-bookings" class="view"></section>
+      <section id="client-privacy" class="view"></section>
+
+      <section id="provider-dashboard" class="view"></section>
+      <section id="provider-services" class="view"></section>
+      <section id="provider-schedule" class="view"></section>
+      <section id="provider-payments" class="view"></section>
+      <section id="provider-clients" class="view"></section>
+      <section id="provider-reviews" class="view"></section>
+
+      <section id="admin-dashboard" class="view"></section>
+      <section id="admin-providers" class="view"></section>
+      <section id="admin-governance" class="view"></section>
+      <section id="admin-revenue" class="view"></section>
+
+      <div class="footer">
+        RedSmart Wellness preview. Demo data only. This file shows the combined product direction: privacy-first accounts, multi-provider marketplace, provider operations, admin governance, scheduling, ratings, and payment/tip logging.
+      </div>
+    </main>
+  </div>
+
+  <div class="modal" id="modal">
+    <div class="modal-panel">
+      <div class="modal-title">
+        <h3 id="modalTitle">Preview</h3>
+        <button class="close" onclick="closeModal()">X</button>
+      </div>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script>
+    const APPS_SCRIPT_ENDPOINTS = [
+      'https://script.google.com/macros/s/AKfycbza2KkkjjQTDjRVjgudbezODvAxYG7SSDg_vcEuauPSJt7giCV0PFLlF6HPnas0stid/exec',
+      'https://script.googleapis.com/macros/s/AKfycbza2KkkjjQTDjRVjgudbezODvAxYG7SSDg_vcEuauPSJt7giCV0PFLlF6HPnas0stid/exec',
+      'https://script.google.com/macros/s/AKfycbxJWAFTCD5wuJMhOTTjer4ydwq2XL7YM3zO1vsqpsh8VPgIH64tRbuV-UikXupQNx-s/exec',
+      'https://script.googleapis.com/macros/s/AKfycbxJWAFTCD5wuJMhOTTjer4ydwq2XL7YM3zO1vsqpsh8VPgIH64tRbuV-UikXupQNx-s/exec'
+    ];
+    const APP_TIME_ZONE = 'America/New_York';
+    const PENDING_WRITES_KEY = 'redsmartPendingWrites';
+    const CLIENT_PINS_KEY = 'redsmartClientPins';
+    const PROVIDER_PINS_KEY = 'redsmartProviderPins';
+
+    const state = {
+      role: 'client',
+      view: 'client-login',
+      backend: {
+        status: 'idle',
+        message: 'Workbook: not synced',
+        lastSynced: '',
+        source: 'demo'
+      },
+      sessions: {
+        client: 'none',
+        provider: 'none',
+        admin: 'none'
+      },
+      bookings: [],
+      users: [],
+      currentClientId: '',
+      currentProviderId: '',
+      payments: [],
+      ratings: [],
+      timeOff: [],
+      offlineBookings: [],
+      availability: [],
+      favorites: [],
+      deletedDataRequests: [],
+      smsLog: [],
+      clientPins: loadLocalObject(CLIENT_PINS_KEY),
+      providerPins: loadLocalObject(PROVIDER_PINS_KEY),
+      scheduleFilters: {
+        source: 'All',
+        status: 'All',
+        payment: 'All',
+        service: 'All',
+        month: '',
+        startDate: '',
+        endDate: ''
+      },
+      schedulePreviewMonth: '2026-04',
+      reviewReplies: [],
+      providers: [],
+      pendingWrites: loadPendingWrites(),
+      retryingWrites: false,
+      sidebarOpen: window.matchMedia('(min-width: 981px)').matches
+    };
+
+    const navConfig = {
+      client: [
+        ['client-login', 'Start / Login'],
+        ['client-dashboard', 'Dashboard'],
+        ['client-providers', 'Browse Providers'],
+        ['client-bookings', 'My Bookings'],
+        ['client-privacy', 'Privacy Controls']
+      ],
+      provider: [
+        ['provider-login', 'Provider Login'],
+        ['provider-dashboard', 'Dashboard'],
+        ['provider-services', 'Services'],
+        ['provider-schedule', 'Schedule'],
+        ['provider-payments', 'Payments & Tips'],
+        ['provider-clients', 'Offline Clients'],
+        ['provider-reviews', 'Reviews']
+      ],
+      admin: [
+        ['admin-login', 'Admin Login'],
+        ['admin-dashboard', 'Dashboard'],
+        ['admin-providers', 'Provider Management'],
+        ['admin-governance', 'Governance'],
+        ['admin-revenue', 'Subscriptions']
+      ]
+    };
+
+    const identity = {
+      client: {
+        none: ['New client', 'Book as guest or create an account'],
+        guest: ['Guest client', 'Can book now, account optional'],
+        account: ['Client account', 'Phone verified']
+      },
+      provider: {
+        none: ['Provider access', 'Sign in to manage your business'],
+        account: ['Provider account', 'Business dashboard']
+      },
+      admin: {
+        none: ['Admin access', 'Sign in to manage the platform'],
+        account: ['RedSmart Admin', 'Platform governance']
+      }
+    };
+
+    function html(strings, ...values) {
+      return strings.reduce((out, str, index) => out + str + (values[index] ?? ''), '');
+    }
+
+    function setRole(role) {
+      state.role = role;
+      if (state.sessions[role] === 'account') {
+        state.view = navConfig[role][1][0];
+      } else if (role === 'client' && state.sessions.client === 'guest') {
+        state.view = 'client-providers';
+      } else {
+        state.view = `${role}-login`;
+      }
+      if (isMobileLayout()) state.sidebarOpen = false;
+      document.querySelectorAll('.role-switcher button, .mobile-role-switcher button').forEach(button => {
+        button.classList.toggle('active', button.dataset.role === role);
+      });
+      render();
+    }
+
+    function setView(view) {
+      if ((state.role === 'provider' || state.role === 'admin') && state.sessions[state.role] !== 'account' && view !== `${state.role}-login`) {
+        state.view = `${state.role}-login`;
+        if (isMobileLayout()) state.sidebarOpen = false;
+        render();
+        return;
+      }
+
+      if (state.role === 'client' && state.sessions.client !== 'account' && ['client-dashboard', 'client-bookings', 'client-privacy'].includes(view)) {
+        state.view = 'client-login';
+        if (isMobileLayout()) state.sidebarOpen = false;
+        render();
+        return;
+      }
+
+      state.view = view;
+      if (isMobileLayout()) state.sidebarOpen = false;
+      render();
+    }
+
+    function statusClass(status) {
+      return status === 'ACTIVE' ? 'active-status' : status === 'PENDING' ? 'pending-status' : 'inactive-status';
+    }
+
+    function providerRows() {
+      if (!state.providers.length) {
+        return '<tr><td colspan="6">No providers are loaded from the workbook yet.</td></tr>';
+      }
+      return state.providers.map(provider => html`
+        <tr>
+          <td><strong>${provider.name}</strong><br><span class="muted small">${provider.services.join(', ')}</span></td>
+          <td>${provider.owner}</td>
+          <td><span class="status ${statusClass(provider.status)}">${provider.status}</span></td>
+          <td>${provider.rating ? provider.rating + ' / 5' : 'New'}</td>
+          <td>${provider.subscription}</td>
+          <td>
+            <label><select onchange="updateProviderSubscription('${provider.id}', this.value)">
+              ${['Starter', 'Professional', 'Scale', 'Trial', 'Unassigned'].map(plan => `<option value="${plan}" ${provider.subscription === plan ? 'selected' : ''}>${plan}</option>`).join('')}
+            </select></label>
+            <div class="btn-row">
+              <button class="btn secondary" onclick="openProviderDetails('${provider.id}')">View</button>
+              ${provider.status === 'PENDING' || provider.status === 'INACTIVE' ? `<button class="btn good" onclick="changeProviderStatus('${provider.id}', 'ACTIVE')">Approve</button>` : ''}
+              ${provider.status === 'ACTIVE' ? `<button class="btn warn" onclick="changeProviderStatus('${provider.id}', 'INACTIVE')">Pause</button>` : ''}
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function planMonthlyFee(plan) {
+      const key = String(plan || '').toLowerCase();
+      if (key.includes('professional') || key.includes('growth')) return 29.99;
+      if (key.includes('starter') || key.includes('basic')) return 19.99;
+      if (key.includes('premium') || key.includes('scale')) return 49.99;
+      return 0;
+    }
+
+    function planDescription(plan) {
+      const key = String(plan || '').toLowerCase();
+      if (key.includes('professional') || key.includes('growth')) return 'More services, advanced schedule tools, reviews, and payment/tip logs.';
+      if (key.includes('premium') || key.includes('scale')) return 'Multi-provider/staff expansion, reporting, priority support, and advanced operations.';
+      if (key.includes('starter') || key.includes('basic')) return 'Core listing, client booking, offline bookings, and basic availability.';
+      return 'Trial or unassigned plan. Billing starts after approval.';
+    }
+
+    function pageHead(title, description, pill) {
+      return html`
+        <div class="page-head">
+          <div>
+            <h2>${title}</h2>
+            <p>${description}</p>
+          </div>
+          ${pill ? `<div class="pill">${pill}</div>` : ''}
+        </div>
+      `;
+    }
+
+    function metric(value, label) {
+      return `<div class="card metric"><div class="value">${value}</div><div class="label">${label}</div></div>`;
+    }
+
+    function workbookNotice() {
+      if (state.backend.status === 'connected') {
+        const availabilityWarning = state.availability.length ? '' : ' Availability actions returned no rows; client slot picking will show no real times until getAvailability/getProviderAvailability is deployed.';
+        const pendingMessage = state.pendingWrites.length ? ` ${state.pendingWrites.length} change${state.pendingWrites.length === 1 ? ' is' : 's are'} queued for automatic retry.` : '';
+        return availabilityWarning || pendingMessage
+          ? `<div class="card" style="margin-bottom:16px; border-left:5px solid var(--warn)"><strong>Schedule data needs attention.</strong> <span class="muted">${availabilityWarning}${pendingMessage}</span></div>`
+          : '';
+      }
+
+      if (state.backend.status === 'error') {
+        return `<div class="card" style="margin-bottom:16px; border-left:5px solid var(--warn)"><strong>Google workbook could not be read through Apps Script.</strong> <span class="muted">${state.backend.error || 'Check the Apps Script deployment URL and access settings.'} The preview is using demo/local data.</span></div>`;
+      }
+
+      if (state.backend.status === 'loading') {
+        return `<div class="card" style="margin-bottom:16px; border-left:5px solid var(--blue)"><strong>Syncing Google workbook...</strong> <span class="muted">Loading USERS, PROVIDERS, BOOKINGS, PROVIDER_AVAILABILITY, PAYMENTS, RATINGS, TIME_OFF, and OFFLINE_BOOKINGS through Apps Script.</span></div>`;
+      }
+
+      return `<div class="card" style="margin-bottom:16px; border-left:5px solid var(--warn)"><strong>Workbook not synced yet.</strong> <span class="muted">The app will keep local changes queued and retry them when the workbook is reachable.</span></div>`;
+    }
+
+    async function callAppsScript(action, method = 'GET', data = null) {
+      let lastError = null;
+
+      for (const endpoint of APPS_SCRIPT_ENDPOINTS) {
+        try {
+          const url = new URL(endpoint);
+          url.searchParams.set('action', action);
+          const options = { method };
+
+          if (method === 'POST') {
+            options.headers = { 'Content-Type': 'text/plain;charset=utf-8' };
+            options.body = JSON.stringify(data || {});
+          }
+
+          const response = await fetch(url.toString(), options);
+          if (!response.ok) {
+            throw new Error(`${response.status} ${response.statusText}`);
+          }
+
+          const result = await response.json();
+          if (result && result.error) {
+            throw new Error(result.error);
+          }
+          return result;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw new Error(`${action}: ${lastError?.message || 'Apps Script request failed'}`);
+    }
+
+    function loadPendingWrites() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(PENDING_WRITES_KEY) || '[]');
+        return Array.isArray(stored) ? stored : [];
+      } catch (error) {
+        return [];
+      }
+    }
+
+    function loadLocalObject(key) {
+      try {
+        const stored = JSON.parse(localStorage.getItem(key) || '{}');
+        return stored && typeof stored === 'object' && !Array.isArray(stored) ? stored : {};
+      } catch (error) {
+        return {};
+      }
+    }
+
+    function saveLocalObject(key, value) {
+      localStorage.setItem(key, JSON.stringify(value || {}));
+    }
+
+    function savePendingWrites() {
+      localStorage.setItem(PENDING_WRITES_KEY, JSON.stringify(state.pendingWrites));
+    }
+
+    function queuePendingWrite(action, data, error = null) {
+      const existing = state.pendingWrites.find(item =>
+        item.action === action &&
+        JSON.stringify(item.data) === JSON.stringify(data)
+      );
+
+      if (existing) {
+        existing.updatedAt = new Date().toISOString();
+        existing.lastError = error?.message || existing.lastError || '';
+        savePendingWrites();
+        updateSyncStatus();
+        return existing;
+      }
+
+      const item = {
+        id: `WRITE-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        action,
+        data,
+        attempts: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        lastError: error?.message || ''
+      };
+      state.pendingWrites.push(item);
+      savePendingWrites();
+      updateSyncStatus();
+      return item;
+    }
+
+    async function saveAppsScriptWrite(action, data) {
+      if (state.backend.source !== 'apps-script') {
+        queuePendingWrite(action, data);
+        return { queued: true };
+      }
+
+      try {
+        const result = await callAppsScript(action, 'POST', data);
+        return { synced: true, result };
+      } catch (error) {
+        queuePendingWrite(action, data, error);
+        return { queued: true, error };
+      }
+    }
+
+    async function retryPendingWrites() {
+      if (state.retryingWrites || state.backend.source !== 'apps-script' || !state.pendingWrites.length) {
+        return;
+      }
+
+      state.retryingWrites = true;
+      const remaining = [];
+
+      for (const item of state.pendingWrites) {
+        try {
+          await callAppsScript(item.action, 'POST', item.data);
+        } catch (error) {
+          remaining.push({
+            ...item,
+            attempts: item.attempts + 1,
+            updatedAt: new Date().toISOString(),
+            lastError: error.message
+          });
+        }
+      }
+
+      state.pendingWrites = remaining;
+      state.retryingWrites = false;
+      savePendingWrites();
+      updateSyncStatus();
+    }
+
+    async function loadGoogleWorkbook() {
+      state.backend = {
+        ...state.backend,
+        status: 'loading',
+        message: 'Workbook: syncing...'
+      };
+      updateSyncStatus();
+
+      try {
+        const [
+          users,
+          providers,
+          bookings,
+          payments,
+          ratings,
+          timeOff,
+          offlineBookings
+        ] = await Promise.all([
+          callAppsScript('getUsers'),
+          callAppsScript('getProviders'),
+          callAppsScript('getBookings'),
+          callAppsScript('getPayments'),
+          callAppsScript('getRatings'),
+          callAppsScript('getTimeOff'),
+          callAppsScript('getOfflineBookings')
+        ]);
+
+        state.users = normalizeUsers(users);
+        state.providers = normalizeProviders(providers);
+        const availability = await loadAvailabilityRows(state.providers);
+        state.bookings = normalizeBookings(bookings);
+        state.payments = normalizePayments(payments);
+        state.ratings = Array.isArray(ratings) ? ratings : [];
+        state.timeOff = Array.isArray(timeOff) ? timeOff : [];
+        state.offlineBookings = normalizeOfflineBookings(offlineBookings);
+        state.availability = normalizeAvailability(availability);
+        state.backend = {
+          status: 'connected',
+          message: `Workbook: ${state.bookings.length} bookings`,
+          lastSynced: new Date().toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' }),
+          source: 'apps-script'
+        };
+        await retryPendingWrites();
+      } catch (error) {
+        state.backend = {
+          status: 'error',
+          message: 'Workbook: sync failed',
+          lastSynced: '',
+          source: 'demo',
+          error: error.message
+        };
+      }
+
+      render();
+    }
+
+    async function loadAvailabilityRows(providers) {
+      try {
+        return await callAppsScript('getAvailability');
+      } catch (allAvailabilityError) {
+        try {
+          const providerRows = await Promise.all(
+            providers.map(provider =>
+              callAppsScriptWithParams('getProviderAvailability', { id: provider.id }).catch(() => [])
+            )
+          );
+          return providerRows.flat();
+        } catch (providerAvailabilityError) {
+          console.warn('Availability actions are unavailable:', allAvailabilityError, providerAvailabilityError);
+          return [];
+        }
+      }
+    }
+
+    async function callAppsScriptWithParams(action, params = {}) {
+      let lastError = null;
+
+      for (const endpoint of APPS_SCRIPT_ENDPOINTS) {
+        try {
+          const url = new URL(endpoint);
+          url.searchParams.set('action', action);
+          Object.entries(params).forEach(([key, value]) => url.searchParams.set(key, value));
+          const response = await fetch(url.toString(), { method: 'GET' });
+          if (!response.ok) {
+            throw new Error(`${response.status} ${response.statusText}`);
+          }
+          const result = await response.json();
+          if (result && result.error) {
+            throw new Error(result.error);
+          }
+          return result;
+        } catch (error) {
+          lastError = error;
+        }
+      }
+
+      throw new Error(`${action}: ${lastError?.message || 'Apps Script request failed'}`);
+    }
+
+    function normalizeProviders(rows) {
+      if (!Array.isArray(rows)) return state.providers;
+      return rows.map((provider, index) => {
+        const services = parseServices(provider.Services);
+        return {
+          id: provider.ProviderID || index + 1,
+          name: provider.BusinessName || provider.Name || 'Unnamed Provider',
+          owner: provider.OwnerName || '',
+          status: provider.Status || 'PENDING',
+          rating: provider.AverageRating || provider.Rating || 0,
+          reviews: provider.TotalReviews || provider.ReviewCount || 0,
+          services,
+          subscription: provider.SubscriptionPlan || provider.Plan || 'Unassigned',
+          bufferTime: provider.BufferTime || 15,
+          raw: provider
+        };
+      });
+    }
+
+    function normalizeUsers(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((user, index) => ({
+        id: user.UserID || index + 1,
+        username: user.Username || user.UserName || user.Name || `User ${index + 1}`,
+        phone: user.Phone || '',
+        userType: user.UserType || user.Role || 'Client',
+        smsVerified: user.SMSVerified || false,
+        raw: user
+      }));
+    }
+
+    function parseServices(rawServices) {
+      if (Array.isArray(rawServices)) return rawServices;
+      if (!rawServices) return ['Wellness Service'];
+      try {
+        const parsed = JSON.parse(rawServices);
+        if (Array.isArray(parsed)) {
+          return parsed.map(service => typeof service === 'string' ? service : serviceToLabel({
+            name: service.name || service.ServiceName || 'Service',
+            duration: service.duration || service.Duration || service.ServiceDuration || 60,
+            price: service.price || service.Price || service.ServicePrice || '',
+            buffer: service.buffer || service.Buffer || service.BufferMinutes || 0
+          }));
+        }
+      } catch (error) {
+        // continue to comma-separated fallback
+      }
+      return String(rawServices).split(',').map(service => service.trim()).filter(Boolean);
+    }
+
+    function parseServiceDetails(service) {
+      if (typeof service === 'object' && service) {
+        return {
+          name: service.name || service.ServiceName || 'Service',
+          duration: durationToMinutes(service.duration || service.Duration || service.ServiceDuration, 60),
+          price: normalizePrice(service.price || service.Price || service.ServicePrice || ''),
+          buffer: durationToMinutes(service.buffer || service.Buffer || service.BufferMinutes, 0)
+        };
+      }
+
+      const text = String(service || 'Wellness Service').trim();
+      const match = text.match(/^(.*?)\s*\(([^,)]*?)(?:,\s*([^,)]*?))?(?:,\s*([^)]*?))?\)$/);
+      if (!match) {
+        return { name: text, duration: 60, price: '', buffer: 0 };
+      }
+
+      return {
+        name: match[1].trim() || 'Service',
+        duration: durationToMinutes(match[2], 60),
+        price: normalizePrice(match[3] || ''),
+        buffer: durationToMinutes(match[4], 0)
+      };
+    }
+
+    function serviceToLabel(service) {
+      const details = parseServiceDetails(service);
+      const price = details.price ? `, ${details.price}` : '';
+      const buffer = details.buffer ? `, ${details.buffer} minute buffer` : '';
+      return `${details.name} (${details.duration} minutes${price}${buffer})`;
+    }
+
+    function serviceToClientLabel(service) {
+      const details = parseServiceDetails(service);
+      const price = details.price ? `, ${details.price}` : '';
+      return `${details.name} (${details.duration} minutes${price})`;
+    }
+
+    function serviceListForClient(services) {
+      const labels = (services || []).map(serviceToClientLabel);
+      return labels.length ? labels.join(', ') : 'No services configured yet';
+    }
+
+    function normalizePrice(value) {
+      const text = String(value || '').trim();
+      if (!text) return '';
+      const number = Number(text.replace(/[^0-9.]/g, ''));
+      if (!Number.isFinite(number)) return text;
+      return `$${number}`;
+    }
+
+    function priceToNumber(value) {
+      const number = Number(String(value || '').replace(/[^0-9.]/g, ''));
+      return Number.isFinite(number) ? number : 0;
+    }
+
+    function servicePriceForBooking(booking) {
+      const provider = findProvider(booking.providerId) || currentProvider();
+      if (!provider?.services?.length) return 0;
+      const bookingService = String(booking.service || '').toLowerCase();
+      const service = provider.services
+        .map(parseServiceDetails)
+        .find(details =>
+          bookingService === details.name.toLowerCase() ||
+          bookingService.includes(details.name.toLowerCase()) ||
+          details.name.toLowerCase().includes(bookingService)
+        );
+      return priceToNumber(service?.price);
+    }
+
+    function defaultPaymentAmountForBooking(booking) {
+      return Number(booking.amount || 0) || servicePriceForBooking(booking);
+    }
+
+    function normalizeBookings(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((booking, index) => ({
+        id: booking.BookingID || index + 1,
+        userId: booking.UserID || '',
+        providerId: booking.ProviderID || '',
+        service: booking.ServiceType || booking.Service || 'Service',
+        date: formatSheetDate(booking.AppointmentDate || booking.Date || booking.CreatedDate),
+        time: formatSheetTime(booking.AppointmentTime || booking.Time),
+        duration: booking.Duration || booking.ServiceDuration || '',
+        nickname: booking.Username || booking.ClientName || booking.UserID || 'Client',
+        phone: booking.Phone || '',
+        status: booking.Status || 'Confirmed',
+        notes: booking.HealthNotes || booking.Notes || '',
+        providerNotes: booking.ProviderNotes || booking.InternalNotes || '',
+        paid: String(booking.PaymentStatus || booking.Paid || '').toLowerCase() === 'paid',
+        createdAt: booking.CreatedDate || booking.CreatedAt || '',
+        source: booking.BookingSource || booking.Source || 'Online',
+        kind: 'online',
+        raw: booking
+      }));
+    }
+
+    function normalizePayments(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((payment, index) => ({
+        id: payment.PaymentID || index + 1,
+        providerId: payment.ProviderID || '',
+        bookingId: payment.BookingID || '',
+        amount: Number(payment.Amount || payment.PaymentAmount || 0),
+        method: payment.PaymentMethod || 'Unknown',
+        type: payment.PaymentType || 'Service',
+        date: formatSheetDate(payment.CreatedDate || payment.Date)
+      }));
+    }
+
+    function normalizeOfflineBookings(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((booking, index) => ({
+        id: booking.OfflineBookingID || index + 1,
+        providerId: booking.ProviderID || '',
+        nickname: booking.ClientName || 'Offline Client',
+        phone: booking.ClientPhone || '',
+        service: booking.ServiceProvided || 'Service',
+        duration: booking.ServiceDuration || '',
+        amount: booking.PaymentAmount || '',
+        method: booking.PaymentMethod || '',
+        tip: booking.TipAmount || '',
+        source: booking.EntryType || 'Offline',
+        date: formatSheetDate(booking.DateOccurred || booking.CreatedDate),
+        time: formatSheetTime(booking.AppointmentTime || booking.Time || ''),
+        status: 'Confirmed',
+        notes: 'Offline booking',
+        providerNotes: booking.ProviderNotes || booking.Notes || '',
+        paid: Boolean(Number(booking.PaymentAmount || 0)),
+        kind: 'offline'
+      }));
+    }
+
+    function normalizeAvailability(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((row, index) => ({
+        id: row.AvailabilityID || index + 1,
+        providerId: row.ProviderID || '',
+        dayOfWeek: row.DayOfWeek || '',
+        startTime: formatSheetTime(row.StartTime || ''),
+        endTime: formatSheetTime(row.EndTime || ''),
+        slotIntervalMinutes: Number(row.SlotIntervalMinutes || 30),
+        bufferMinutes: Number(row.BufferMinutes || 15),
+        isActive: parseBoolean(row.IsActive),
+        effectiveStartDate: formatSheetDate(row.EffectiveStartDate || ''),
+        effectiveEndDate: formatSheetDate(row.EffectiveEndDate || ''),
+        notes: row.Notes || '',
+        raw: row
+      }));
+    }
+
+    function parseBoolean(value) {
+      if (typeof value === 'boolean') return value;
+      return String(value).toUpperCase() === 'TRUE';
+    }
+
+    function formatSheetDate(value) {
+      if (!value) return '';
+      if (Object.prototype.toString.call(value) === '[object Date]') {
+        return value.toISOString().slice(0, 10);
+      }
+
+      const text = String(value).trim();
+      const serialTimestampMatch = text.match(/^1899-12-30T(\d{2}:\d{2})/);
+      if (serialTimestampMatch) {
+        return '';
+      }
+
+      const dateMatch = text.match(/^(\d{4}-\d{2}-\d{2})/);
+      if (dateMatch) {
+        return dateMatch[1];
+      }
+
+      return text;
+    }
+
+    function formatSheetTime(value) {
+      if (!value) return '';
+      const text = String(value).trim();
+
+      if (/^1899-12-30T\d{2}:\d{2}/.test(text)) {
+        return formatIsoTimeInAppZone(text);
+      }
+
+      if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}/.test(text)) {
+        return formatIsoTimeInAppZone(text);
+      }
+
+      const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})/);
+      if (twentyFourHourMatch && !/[AP]M/i.test(text)) {
+        return toDisplayTime(`${twentyFourHourMatch[1]}:${twentyFourHourMatch[2]}`);
+      }
+
+      return text;
+    }
+
+    function formatIsoTimeInAppZone(value) {
+      const date = new Date(value);
+      if (Number.isNaN(date.getTime())) return value;
+      return date.toLocaleTimeString('en-US', {
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true,
+        timeZone: APP_TIME_ZONE
+      });
+    }
+
+    function toDisplayTime(time24) {
+      const [hourText, minute = '00'] = String(time24).split(':');
+      let hour = Number(hourText);
+      if (!Number.isFinite(hour)) return String(time24);
+      const suffix = hour >= 12 ? 'PM' : 'AM';
+      hour = hour % 12 || 12;
+      return `${hour}:${minute.padStart(2, '0')} ${suffix}`;
+    }
+
+    function normalizeTimeInput(value) {
+      const text = String(value || '').trim();
+      if (!text || text.toLowerCase() === 'closed') return 'Closed';
+
+      const twelveHourMatch = text.match(/^(\d{1,2})(?::(\d{2}))?\s*(AM|PM)$/i);
+      if (twelveHourMatch) {
+        const hour = Number(twelveHourMatch[1]);
+        const minute = twelveHourMatch[2] || '00';
+        const period = twelveHourMatch[3].toUpperCase();
+        if (hour < 1 || hour > 12) return text;
+        return `${hour}:${minute.padStart(2, '0')} ${period}`;
+      }
+
+      const twentyFourHourMatch = text.match(/^(\d{1,2}):(\d{2})$/);
+      if (twentyFourHourMatch) {
+        const hour = Number(twentyFourHourMatch[1]);
+        const minute = Number(twentyFourHourMatch[2]);
+        if (hour >= 0 && hour <= 23 && minute >= 0 && minute <= 59) {
+          return toDisplayTime(`${hour}:${String(minute).padStart(2, '0')}`);
+        }
+      }
+
+      return text;
+    }
+
+    function normalizeTimeField(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      input.value = normalizeTimeInput(input.value);
+    }
+
+    function normalizeTimeFieldWhenComplete(inputId) {
+      const input = document.getElementById(inputId);
+      if (!input) return;
+      const text = input.value.trim();
+      if (/^\d{1,2}:\d{2}$/.test(text) || /^\d{1,2}(?::\d{2})?\s*(AM|PM)$/i.test(text)) {
+        input.value = normalizeTimeInput(text);
+      }
+    }
+
+    function timeOptionsHtml(selectedValue) {
+      const selected = normalizeTimeInput(selectedValue);
+      const values = [];
+      for (let minutes = 0; minutes < 24 * 60; minutes += 30) {
+        values.push(toDisplayTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`));
+      }
+      if (selected && selected !== 'Closed' && !values.includes(selected)) {
+        values.push(selected);
+      }
+      return values.map(value => `<option value="${value}" ${value === selected ? 'selected' : ''}></option>`).join('');
+    }
+
+    function formatDisplayDate(dateValue) {
+      if (!dateValue) return 'Date TBD';
+      const date = new Date(`${dateValue}T12:00:00`);
+      if (Number.isNaN(date.getTime())) return dateValue;
+      return date.toLocaleDateString('en-US', {
+        weekday: 'short',
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric'
+      });
+    }
+
+    function monthLabel(monthValue) {
+      if (!monthValue) return 'Month';
+      const date = new Date(`${monthValue}-01T12:00:00`);
+      if (Number.isNaN(date.getTime())) return monthValue;
+      return date.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    }
+
+    function todayDateValue() {
+      const now = new Date();
+      return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+    }
+
+    function currentMinutesNow() {
+      const now = new Date();
+      return now.getHours() * 60 + now.getMinutes();
+    }
+
+    function monthEndDate(monthValue) {
+      const [year, month] = String(monthValue || '').split('-').map(Number);
+      if (!year || !month) return '';
+      const lastDay = new Date(year, month, 0).getDate();
+      return `${year}-${String(month).padStart(2, '0')}-${String(lastDay).padStart(2, '0')}`;
+    }
+
+    function addMonths(monthValue, delta) {
+      const [year, month] = String(monthValue || '').split('-').map(Number);
+      const base = new Date(year || 2026, (month || 4) - 1 + delta, 1);
+      return `${base.getFullYear()}-${String(base.getMonth() + 1).padStart(2, '0')}`;
+    }
+
+    function formatDisplayTime(timeValue) {
+      return formatSheetTime(timeValue) || 'Time TBD';
+    }
+
+    function formatCurrency(value) {
+      return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD',
+        maximumFractionDigits: 0
+      }).format(Number(value) || 0);
+    }
+
+    function getBookings() {
+      return state.bookings;
+    }
+
+    function getOfflineBookings() {
+      return state.offlineBookings.map(booking => ({
+        ...booking,
+        status: booking.status || 'Confirmed',
+        source: booking.source || 'Offline',
+        notes: booking.notes || 'Offline booking',
+        kind: booking.kind || 'offline'
+      }));
+    }
+
+    function isMobileLayout() {
+      return window.matchMedia('(max-width: 980px)').matches;
+    }
+
+    function toggleSidebar() {
+      state.sidebarOpen = !state.sidebarOpen;
+      renderShell();
+    }
+
+    function closeSidebar() {
+      state.sidebarOpen = false;
+      renderShell();
+    }
+
+    function renderShell() {
+      const layout = document.querySelector('.layout');
+      const toggle = document.getElementById('menuToggle');
+      if (!layout || !toggle) return;
+
+      if (!isMobileLayout()) {
+        layout.classList.remove('nav-open', 'nav-closed');
+        toggle.setAttribute('aria-expanded', 'false');
+        toggle.setAttribute('aria-label', 'Open navigation');
+        toggle.textContent = '☰';
+        return;
+      }
+
+      layout.classList.toggle('nav-open', state.sidebarOpen);
+      layout.classList.toggle('nav-closed', !state.sidebarOpen);
+      toggle.setAttribute('aria-expanded', String(state.sidebarOpen));
+      toggle.setAttribute('aria-label', state.sidebarOpen ? 'Close navigation' : 'Open navigation');
+      toggle.textContent = state.sidebarOpen ? '×' : '☰';
+    }
+
+    function upcomingBookings() {
+      return getBookings().filter(booking => String(booking.status).toLowerCase() !== 'cancelled');
+    }
+
+    function bookingIsCancelled(booking) {
+      return String(booking?.status || '').toLowerCase() === 'cancelled';
+    }
+
+    function bookingIsCompleted(booking) {
+      return String(booking?.status || '').toLowerCase() === 'completed';
+    }
+
+    function currentClient() {
+      return state.users.find(user => String(user.id) === String(state.currentClientId)) || null;
+    }
+
+    function usernameExists(username, excludeUserId = '') {
+      const normalized = String(username || '').trim().toLowerCase();
+      if (!normalized) return false;
+      return state.users.some(user =>
+        String(user.id) !== String(excludeUserId) &&
+        String(user.username || '').trim().toLowerCase() === normalized
+      );
+    }
+
+    function currentProvider() {
+      return state.providers.find(provider => String(provider.id) === String(state.currentProviderId)) || state.providers[0] || null;
+    }
+
+    function bookingMatchesCurrentClient(booking, client = currentClient()) {
+      if (state.sessions.client !== 'account' || !state.currentClientId) {
+        return false;
+      }
+
+      if (String(booking.userId || '') === String(state.currentClientId)) {
+        return true;
+      }
+
+      const clientPhone = normalizePhone(client?.phone);
+      const bookingPhone = normalizePhone(booking.phone || booking.raw?.Phone || booking.raw?.ClientPhone);
+      if (clientPhone && bookingPhone && clientPhone === bookingPhone) {
+        return true;
+      }
+
+      const clientName = String(client?.username || '').trim().toLowerCase();
+      const bookingNames = [
+        booking.nickname,
+        booking.raw?.Username,
+        booking.raw?.ClientName,
+        booking.raw?.Name
+      ].map(value => String(value || '').trim().toLowerCase()).filter(Boolean);
+
+      return Boolean(clientName && bookingNames.includes(clientName));
+    }
+
+    function allClientBookings() {
+      return [
+        ...getBookings(),
+        ...getOfflineBookings()
+      ].filter(booking => bookingMatchesCurrentClient(booking));
+    }
+
+    function clientScopedBookings() {
+      return allClientBookings().filter(booking => !bookingIsCancelled(booking) && !bookingIsCompleted(booking));
+    }
+
+    function completedClientBookings() {
+      return allClientBookings().filter(booking => bookingIsCompleted(booking));
+    }
+
+    function providerAppointments() {
+      const provider = currentProvider();
+      if (!provider) return [];
+      return [
+        ...upcomingBookings().filter(booking => String(booking.providerId) === String(provider.id)),
+        ...getOfflineBookings().filter(booking => String(booking.providerId) === String(provider.id))
+      ];
+    }
+
+    function providerNameForBooking(booking) {
+      return findProvider(booking?.providerId)?.name || `Provider ${booking?.providerId || ''}`.trim();
+    }
+
+    function filteredProviderAppointments() {
+      return providerAppointments().filter(booking => {
+        const filters = state.scheduleFilters;
+        const source = String(booking.source || '').toLowerCase();
+        const status = String(booking.status || '').toLowerCase();
+        const service = String(booking.service || '').toLowerCase();
+
+        if (filters.source !== 'All' && source !== filters.source.toLowerCase()) {
+          return false;
+        }
+
+        if (filters.status !== 'All' && status !== filters.status.toLowerCase()) {
+          return false;
+        }
+
+        if (filters.payment === 'Paid' && !booking.paid) {
+          return false;
+        }
+
+        if (filters.payment === 'Unpaid' && booking.paid) {
+          return false;
+        }
+
+        if (filters.service !== 'All' && !service.includes(filters.service.toLowerCase())) {
+          return false;
+        }
+
+        if (!dateWithinScheduleFilters(booking.date)) {
+          return false;
+        }
+
+        return true;
+      });
+    }
+
+    function activeFilterSummary() {
+      const entries = Object.entries(state.scheduleFilters)
+        .filter(([, value]) => value && value !== 'All')
+        .map(([key, value]) => {
+          if (key === 'startDate') return `from: ${formatDisplayDate(value)}`;
+          if (key === 'endDate') return `through: ${formatDisplayDate(value)}`;
+          return `${key}: ${value}`;
+        });
+      return entries.length ? entries.join(' · ') : 'No filters active';
+    }
+
+    function scheduleFilterRange() {
+      const { month, startDate, endDate } = state.scheduleFilters;
+      if (startDate || endDate) {
+        return {
+          start: startDate || '0000-01-01',
+          end: endDate || '9999-12-31'
+        };
+      }
+      if (month) {
+        return {
+          start: `${month}-01`,
+          end: monthEndDate(month)
+        };
+      }
+      return { start: '', end: '' };
+    }
+
+    function dateWithinScheduleFilters(dateValue) {
+      if (!dateValue) return true;
+      const { start, end } = scheduleFilterRange();
+      if (start && dateValue < start) return false;
+      if (end && dateValue > end) return false;
+      return true;
+    }
+
+    function providerPaymentsForCurrent() {
+      const provider = currentProvider();
+      if (!provider) return [];
+      return state.payments.filter(payment => String(payment.providerId) === String(provider.id));
+    }
+
+    function filteredProviderPayments() {
+      return providerPaymentsForCurrent().filter(payment => dateWithinScheduleFilters(payment.date));
+    }
+
+    function providerRatingsForCurrent() {
+      const provider = currentProvider();
+      if (!provider) return [];
+      return state.ratings.filter(rating => String(rating.ProviderID || rating.providerId) === String(provider.id));
+    }
+
+    function providerOfflineBookingsForCurrent() {
+      const provider = currentProvider();
+      if (!provider) return [];
+      return getOfflineBookings().filter(booking => String(booking.providerId) === String(provider.id));
+    }
+
+    function providerAvailabilityFor(providerId) {
+      return state.availability.filter(row => String(row.providerId) === String(providerId));
+    }
+
+    function availabilityEffectiveStart(row) {
+      return row.effectiveStartDate || '';
+    }
+
+    function availabilityVersionStarts(providerId) {
+      return [...new Set(providerAvailabilityFor(providerId).map(availabilityEffectiveStart))]
+        .sort((left, right) => String(left || '0000-01-01').localeCompare(String(right || '0000-01-01')));
+    }
+
+    function latestAvailabilityStart(providerId) {
+      const starts = availabilityVersionStarts(providerId);
+      return starts[starts.length - 1] || new Date().toISOString().slice(0, 10);
+    }
+
+    function availabilityStartForDate(providerId, dateValue) {
+      const starts = availabilityVersionStarts(providerId)
+        .filter(start => !start || start <= dateValue);
+      return starts[starts.length - 1] || '';
+    }
+
+    function providerAvailabilityForVersion(providerId, effectiveStartDate) {
+      return providerAvailabilityFor(providerId)
+        .filter(row => availabilityEffectiveStart(row) === effectiveStartDate);
+    }
+
+    function availabilityForDate(providerId, dateValue) {
+      const dayName = getDayName(dateValue);
+      const effectiveStartDate = availabilityStartForDate(providerId, dateValue);
+      return providerAvailabilityForVersion(providerId, effectiveStartDate).filter(row => {
+        if (row.dayOfWeek !== dayName || !row.isActive) return false;
+        if (!row.startTime || !row.endTime || row.startTime === 'Closed' || row.endTime === 'Closed') return false;
+        return true;
+      });
+    }
+
+    function getDayName(dateValue) {
+      const date = new Date(`${dateValue}T12:00:00`);
+      if (Number.isNaN(date.getTime())) return '';
+      return date.toLocaleDateString('en-US', { weekday: 'long' });
+    }
+
+    function providerTimeOffForDate(providerId, dateValue) {
+      return state.timeOff.filter(row => {
+        const rowProviderId = row.ProviderID || row.providerId;
+        if (String(rowProviderId) !== String(providerId)) return false;
+        const startDate = formatSheetDate(row.StartDate || row.startDate);
+        const endDate = formatSheetDate(row.EndDate || row.endDate || startDate);
+        return startDate && dateValue >= startDate && dateValue <= endDate;
+      });
+    }
+
+    function bookingsForProviderDate(providerId, dateValue) {
+      return [
+        ...upcomingBookings().filter(booking => String(booking.providerId) === String(providerId) && booking.date === dateValue),
+        ...getOfflineBookings().filter(booking => String(booking.providerId) === String(providerId) && booking.date === dateValue)
+      ];
+    }
+
+    function availableSlotsFor(providerId, dateValue, requestedDuration = null, futureOnly = false, requestedBuffer = 0) {
+      if (!providerId || !dateValue) return [];
+      if (providerTimeOffForDate(providerId, dateValue).length) return [];
+
+      const availabilityRows = availabilityForDate(providerId, dateValue);
+      if (!availabilityRows.length) return [];
+
+      const existingBookings = bookingsForProviderDate(providerId, dateValue);
+      const slots = [];
+
+      availabilityRows.forEach(row => {
+        const interval = row.slotIntervalMinutes || 30;
+        const buffer = Number(requestedBuffer || 0);
+        const candidateDuration = durationToMinutes(requestedDuration, interval);
+        const start = timeToMinutes(row.startTime);
+        const end = timeToMinutes(row.endTime);
+        if (!Number.isFinite(start) || !Number.isFinite(end) || start >= end) return;
+
+        for (let minutes = start; minutes < end; minutes += interval) {
+          if (futureOnly && dateValue === todayDateValue() && minutes <= currentMinutesNow()) continue;
+          if (minutes + candidateDuration > end) continue;
+          const hasConflict = existingBookings.some(booking => {
+            const bookedMinutes = timeToMinutes(booking.time);
+            if (!Number.isFinite(bookedMinutes)) return false;
+            const bookedEnd = bookedMinutes + durationToMinutes(booking.duration, interval);
+            const candidateEnd = minutes + candidateDuration;
+            return minutes < bookedEnd + buffer && candidateEnd > bookedMinutes - buffer;
+          });
+
+          if (!hasConflict) {
+            slots.push(toDisplayTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`));
+          }
+        }
+      });
+
+      return [...new Set(slots)];
+    }
+
+    function availableWindowsFor(providerId, dateValue) {
+      if (!providerId || !dateValue || providerTimeOffForDate(providerId, dateValue).length) return [];
+      const availabilityRows = availabilityForDate(providerId, dateValue);
+      const existingBookings = sortedBookings(bookingsForProviderDate(providerId, dateValue));
+      const availabilitySegments = availabilityRows
+        .map(row => ({
+          start: timeToMinutes(row.startTime),
+          end: timeToMinutes(row.endTime),
+          slotIntervalMinutes: row.slotIntervalMinutes || 30,
+          bufferMinutes: 0
+        }))
+        .filter(segment => Number.isFinite(segment.start) && Number.isFinite(segment.end) && segment.start < segment.end)
+        .sort((left, right) => left.start - right.start);
+
+      let openSegments = mergeAvailabilitySegments(availabilitySegments);
+
+      existingBookings.forEach(booking => {
+        const bookedStart = timeToMinutes(booking.time);
+        if (!Number.isFinite(bookedStart)) return;
+        const bookedEnd = bookedStart + durationToMinutes(booking.duration, 60);
+
+        openSegments = openSegments.flatMap(segment => {
+          if (bookedEnd <= segment.start || bookedStart >= segment.end) return [segment];
+          return [
+            { ...segment, end: Math.max(segment.start, bookedStart) },
+            { ...segment, start: Math.min(segment.end, bookedEnd) }
+          ].filter(next => next.end > next.start);
+        });
+      });
+
+      return openSegments.sort((left, right) => left.start - right.start);
+    }
+
+    function mergeAvailabilitySegments(segments) {
+      return segments.reduce((merged, segment) => {
+        const previous = merged[merged.length - 1];
+        if (!previous || segment.start > previous.end) {
+          merged.push({ ...segment });
+          return merged;
+        }
+
+        previous.end = Math.max(previous.end, segment.end);
+        previous.slotIntervalMinutes = Math.min(previous.slotIntervalMinutes, segment.slotIntervalMinutes);
+        previous.bufferMinutes = Math.max(previous.bufferMinutes, segment.bufferMinutes);
+        return merged;
+      }, []);
+    }
+
+    function minutesToDisplayTime(minutes) {
+      return toDisplayTime(`${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`);
+    }
+
+    function durationToMinutes(durationValue, fallback = 60) {
+      if (typeof durationValue === 'number' && Number.isFinite(durationValue)) return durationValue;
+      const match = String(durationValue || '').match(/\d+/);
+      return match ? Number(match[0]) : fallback;
+    }
+
+    function sortedBookings(bookings) {
+      return [...bookings].sort((left, right) => {
+        const leftSort = `${left.date || '9999-12-31'} ${String(timeToMinutes(left.time)).padStart(4, '0')}`;
+        const rightSort = `${right.date || '9999-12-31'} ${String(timeToMinutes(right.time)).padStart(4, '0')}`;
+        return leftSort.localeCompare(rightSort);
+      });
+    }
+
+    function timeToMinutes(timeValue) {
+      const displayTime = formatSheetTime(timeValue);
+      const match = String(displayTime).trim().match(/^(\d{1,2}):(\d{2})\s*(AM|PM)$/i);
+      if (!match) return Number.POSITIVE_INFINITY;
+      let hour = Number(match[1]);
+      const minute = Number(match[2]);
+      const period = match[3].toUpperCase();
+      if (period === 'PM' && hour < 12) hour += 12;
+      if (period === 'AM' && hour === 12) hour = 0;
+      return hour * 60 + minute;
+    }
+
+    function groupBookingsByDate(bookings) {
+      return sortedBookings(bookings).reduce((groups, booking) => {
+        const dateKey = booking.date || 'Date TBD';
+        if (!groups[dateKey]) groups[dateKey] = [];
+        groups[dateKey].push(booking);
+        return groups;
+      }, {});
+    }
+
+    function renderProviderAgenda(bookings, limitDays = 7) {
+      const groups = groupBookingsByDate(bookings);
+      const dateKeys = Object.keys(groups).slice(0, limitDays);
+
+      if (dateKeys.length === 0) {
+        return '<div class="item"><strong>No appointments found.</strong><br><span class="muted">The workbook did not return any confirmed bookings.</span></div>';
+      }
+
+      return `<div class="agenda">${dateKeys.map(dateKey => {
+        const dayBookings = groups[dateKey];
+        return html`
+          <div class="agenda-day">
+            <div class="agenda-day-header">
+              <div class="agenda-date">${formatDisplayDate(dateKey)}</div>
+              <span class="pill">${dayBookings.length} appointment${dayBookings.length === 1 ? '' : 's'}</span>
+            </div>
+            ${dayBookings.map(booking => html`
+              <div class="appointment">
+                <div class="appointment-time">${formatDisplayTime(booking.time)}</div>
+                <div>
+                  <div class="appointment-title">${booking.service}</div>
+                  <div class="appointment-meta">
+                    Client: ${booking.nickname || 'Client'}${booking.duration ? ` · ${booking.duration} min` : ''}${booking.notes ? ` · ${booking.notes}` : ''}${booking.providerNotes ? ` · Note: ${booking.providerNotes}` : ''}
+                  </div>
+                </div>
+                <div class="appointment-actions">
+                  <span class="status ${booking.paid ? 'active-status' : 'pending-status'}">${booking.paid ? 'PAID' : 'UNPAID'}</span>
+                  <button class="btn secondary" onclick="openAppointmentDetail('${booking.kind || 'online'}', '${booking.id}')">Details</button>
+                  <button class="btn good" onclick="markAppointmentPaid('${booking.kind || 'online'}', '${booking.id}')">Paid</button>
+                  <button class="btn secondary" onclick="openAppointmentNotes('${booking.kind || 'online'}', '${booking.id}')">Notes</button>
+                  <button class="btn warn" onclick="updateAppointmentStatus('${booking.kind || 'online'}', '${booking.id}', 'Completed')">Complete</button>
+                  <button class="btn warn" onclick="cancelAppointment('${booking.kind || 'online'}', '${booking.id}')">Cancel</button>
+                  <button class="btn secondary" onclick="deleteAppointment('${booking.kind || 'online'}', '${booking.id}')">Delete</button>
+                </div>
+              </div>
+            `).join('')}
+          </div>
+        `;
+      }).join('')}</div>`;
+    }
+
+    function updateSyncStatus() {
+      const statusButton = document.getElementById('syncStatus');
+      if (!statusButton) return;
+      const pending = state.pendingWrites.length ? ` · ${state.pendingWrites.length} pending` : '';
+      statusButton.textContent = `${state.backend.message}${pending}`;
+      statusButton.className = `sync-pill ${state.backend.status === 'connected' ? 'connected' : state.backend.status === 'error' ? 'error' : state.backend.status === 'loading' ? 'warning' : ''}`;
+    }
+
+    async function saveBooking(booking) {
+      const write = await saveAppsScriptWrite('createBooking', {
+        userId: booking.userId || '',
+        providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || '',
+        serviceType: booking.service,
+        appointmentDate: booking.date,
+        appointmentTime: booking.time,
+        duration: booking.duration || 60,
+        healthNotes: booking.notes || ''
+      });
+
+      state.bookings = [...state.bookings, booking];
+      return { ok: true, localOnly: Boolean(write.queued), queued: Boolean(write.queued) };
+    }
+
+    async function saveOfflineBooking(booking) {
+      const write = await saveAppsScriptWrite('createOfflineBooking', {
+        providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || 1,
+        clientName: booking.nickname,
+        clientPhone: booking.phone,
+        serviceProvided: booking.service,
+        serviceDuration: booking.duration || 60,
+        paymentAmount: booking.amount || 0,
+        paymentMethod: booking.method || '',
+        tipAmount: booking.tip || 0,
+        entryType: booking.source || 'Phone',
+        dateOccurred: booking.date,
+        appointmentTime: booking.time,
+        time: booking.time,
+        status: booking.status || 'Confirmed'
+      });
+
+      state.offlineBookings = [...state.offlineBookings, booking];
+      return { ok: true, localOnly: Boolean(write.queued), queued: Boolean(write.queued) };
+    }
+
+    function findProvider(providerId) {
+      return state.providers.find(provider => String(provider.id) === String(providerId));
+    }
+
+    async function changeProviderStatus(providerId, status) {
+      const provider = findProvider(providerId);
+      if (!provider) {
+        toast('Provider not found');
+        return;
+      }
+
+      try {
+        const write = await saveAppsScriptWrite('updateProviderStatus', { providerId, status });
+        state.providers = state.providers.map(item => String(item.id) === String(providerId) ? { ...item, status } : item);
+        render();
+        toast(write.queued ? `${provider.name} is now ${status} locally and queued for workbook retry` : `${provider.name} is now ${status}`);
+      } catch (error) {
+        toast(`Provider status could not be updated: ${error.message}`);
+      }
+    }
+
+    async function saveProviderServices(providerId, services) {
+      await saveAppsScriptWrite('updateProvider', { providerId, services });
+      state.providers = state.providers.map(provider => String(provider.id) === String(providerId) ? { ...provider, services } : provider);
+    }
+
+    async function updateProviderSubscription(providerId, subscription) {
+      const provider = findProvider(providerId);
+      if (!provider) {
+        toast('Provider not found');
+        return;
+      }
+
+      const write = await saveAppsScriptWrite('updateProvider', { providerId, subscriptionPlan: subscription });
+      state.providers = state.providers.map(item => String(item.id) === String(providerId) ? { ...item, subscription } : item);
+      render();
+      toast(write.queued ? `${provider.name} subscription saved locally and queued` : `${provider.name} subscription updated`);
+    }
+
+    function findAppointment(kind, id) {
+      const list = kind === 'offline' ? state.offlineBookings : state.bookings;
+      return list.find(booking => String(booking.id) === String(id));
+    }
+
+    function updateAppointmentLocal(kind, id, patch) {
+      const updater = booking => String(booking.id) === String(id) ? { ...booking, ...patch } : booking;
+      if (kind === 'offline') {
+        state.offlineBookings = state.offlineBookings.map(updater);
+      } else {
+        state.bookings = state.bookings.map(updater);
+      }
+    }
+
+    async function markAppointmentPaid(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+
+      const amount = defaultPaymentAmountForBooking(booking) || Number(prompt('Payment amount', '120') || 0);
+      const method = booking.method || prompt('Payment method', 'Cash') || 'Cash';
+      await saveAppointmentPaymentValues(kind, id, amount, Number(booking.tip || 0), method, true);
+    }
+
+    async function saveAppointmentPayment(kind, id) {
+      const amount = Number(document.getElementById('detailPaymentAmount')?.value || 0);
+      const tip = Number(document.getElementById('detailPaymentTip')?.value || 0);
+      const method = document.getElementById('detailPaymentMethod')?.value || 'Cash';
+      const paid = document.getElementById('detailPaymentStatus')?.value !== 'Unpaid';
+      await saveAppointmentPaymentValues(kind, id, amount, tip, method, paid);
+    }
+
+    async function saveAppointmentPaymentValues(kind, id, amount, tip, method, paid) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+
+      try {
+        if (paid && amount > 0) {
+          await saveAppsScriptWrite('createPayment', {
+            providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || 1,
+            bookingId: kind === 'offline' ? '' : booking.id,
+            amount,
+            paymentMethod: method,
+            paymentType: 'Service'
+          });
+        }
+        if (paid && tip > 0) {
+          await saveAppsScriptWrite('createPayment', {
+            providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || 1,
+            bookingId: kind === 'offline' ? '' : booking.id,
+            amount: tip,
+            paymentMethod: method,
+            paymentType: 'Tip'
+          });
+        }
+
+        if (paid && amount > 0) {
+          state.payments.push({
+            id: `LOCAL-PAYMENT-${Date.now()}`,
+            providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || 1,
+            bookingId: kind === 'offline' ? '' : booking.id,
+            amount,
+            method,
+            type: 'Service',
+            date: booking.date || new Date().toISOString().slice(0, 10)
+          });
+        }
+        if (paid && tip > 0) {
+          state.payments.push({
+            id: `LOCAL-TIP-${Date.now()}`,
+            providerId: booking.providerId || currentProvider()?.id || state.providers[0]?.id || 1,
+            bookingId: kind === 'offline' ? '' : booking.id,
+            amount: tip,
+            method,
+            type: 'Tip',
+            date: booking.date || new Date().toISOString().slice(0, 10)
+          });
+        }
+
+        updateAppointmentLocal(kind, id, { paid, amount, tip, method });
+        closeModal();
+        render();
+        toast(paid ? `${booking.nickname || 'Client'} payment saved${state.pendingWrites.length ? ' and queued if needed' : ''}` : `${booking.nickname || 'Client'} marked unpaid`);
+      } catch (error) {
+        toast(`Payment could not be logged: ${error.message}`);
+      }
+    }
+
+    async function updateAppointmentStatus(kind, id, status) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+
+      try {
+        if (kind !== 'offline') {
+          await saveAppsScriptWrite('updateBooking', {
+            bookingId: booking.id,
+            status
+          });
+        }
+
+        updateAppointmentLocal(kind, id, { status });
+        render();
+        toast(`${booking.service} marked ${status.toLowerCase()}`);
+      } catch (error) {
+        toast(`Status could not be updated: ${error.message}`);
+      }
+    }
+
+    async function cancelAppointment(kind, id) {
+      return updateAppointmentStatus(kind, id, 'Cancelled');
+    }
+
+    function deleteAppointment(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+
+      const confirmed = window.confirm(`Delete ${booking.service || 'this appointment'} for ${booking.nickname || 'Client'}?`);
+      if (!confirmed) return;
+
+      if (kind === 'offline') {
+        state.offlineBookings = state.offlineBookings.filter(item => String(item.id) !== String(id));
+      } else {
+        state.bookings = state.bookings.filter(item => String(item.id) !== String(id));
+      }
+
+      closeModal();
+      render();
+      toast('Appointment deleted from this preview');
+    }
+
+    function sendSmsPreview(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+      state.smsLog.push({
+        id: Date.now(),
+        to: booking.phone || booking.nickname || 'Client',
+        message: `Hi ${booking.nickname || 'there'}, this is a RedSmart reminder for ${booking.service} on ${formatDisplayDate(booking.date)} at ${formatDisplayTime(booking.time)}.`
+      });
+      openSmsModal();
+    }
+
+    function startClientGuest() {
+      state.role = 'client';
+      state.sessions.client = 'guest';
+      state.view = 'client-providers';
+      document.querySelectorAll('.role-switcher button, .mobile-role-switcher button').forEach(button => {
+        button.classList.toggle('active', button.dataset.role === 'client');
+      });
+      render();
+    }
+
+    function loginAs(role) {
+      state.role = role;
+      state.sessions[role] = 'account';
+      if (role === 'client' && !state.currentClientId) {
+        state.currentClientId = state.users[0]?.id || '';
+      }
+      if (role === 'provider' && !state.currentProviderId) {
+        state.currentProviderId = state.providers[0]?.id || '';
+      }
+      state.view = role === 'client' ? 'client-dashboard' : role === 'provider' ? 'provider-dashboard' : 'admin-dashboard';
+      document.querySelectorAll('.role-switcher button, .mobile-role-switcher button').forEach(button => {
+        button.classList.toggle('active', button.dataset.role === role);
+      });
+      render();
+    }
+
+    function logout(role = state.role) {
+      state.sessions[role] = role === 'client' ? 'guest' : 'none';
+      if (role === 'client') {
+        state.currentClientId = '';
+        state.view = 'client-login';
+      }
+      if (role === 'provider') {
+        state.currentProviderId = '';
+        state.view = 'provider-login';
+      }
+      if (role === 'admin') {
+        state.view = 'admin-login';
+      }
+      render();
+    }
+
+    function loginProviderByForm() {
+      const businessName = document.getElementById('providerLoginBusinessName')?.value?.trim() || '';
+      const phone = document.getElementById('providerLoginPhone')?.value?.trim() || '';
+      const pin = document.getElementById('providerLoginPin')?.value?.trim() || '';
+      const provider = state.providers.find(item =>
+        item.name.toLowerCase() === businessName.toLowerCase() ||
+        normalizePhone(item.raw?.Phone || item.phone) === normalizePhone(phone) ||
+        String(item.id) === businessName
+      );
+      if (!provider) {
+        openModal('Provider Not Found', html`
+          <p>No workbook provider matched <strong>${businessName || phone || 'that login'}</strong>.</p>
+          <p class="muted small">Apply as a provider, or set a local preview PIN to create a pending provider profile for testing.</p>
+          <div class="btn-row">
+            <button class="btn" onclick="openProviderApplyModal()">Apply as Provider</button>
+            <button class="btn secondary" onclick="createLocalProviderFromLogin()">Set PIN and Continue</button>
+          </div>
+        `);
+        return;
+      }
+      const expectedPin = state.providerPins[provider.id];
+      if (expectedPin && pin !== expectedPin) {
+        toast(pin ? 'Incorrect provider PIN' : 'Enter your provider PIN');
+        return;
+      }
+      if (!expectedPin) {
+        if (!pin) {
+          toast('Enter a PIN, then use Set PIN and Continue for re-entry');
+          return;
+        }
+        state.providerPins[provider.id] = pin;
+        saveLocalObject(PROVIDER_PINS_KEY, state.providerPins);
+      }
+      state.currentProviderId = provider.id;
+      loginAs('provider');
+    }
+
+    function createLocalProviderFromLogin() {
+      const name = document.getElementById('providerLoginBusinessName')?.value?.trim() || '';
+      const phone = document.getElementById('providerLoginPhone')?.value?.trim() || '';
+      const pin = document.getElementById('providerLoginPin')?.value?.trim() || '';
+      if (!name && !phone) return toast('Enter a business name or phone');
+      if (!pin) return toast('Enter a PIN for provider preview access');
+      const existing = state.providers.find(item =>
+        item.name.toLowerCase() === name.toLowerCase() ||
+        normalizePhone(item.raw?.Phone || item.phone) === normalizePhone(phone)
+      );
+      if (existing) {
+        state.providerPins[existing.id] = pin;
+        saveLocalObject(PROVIDER_PINS_KEY, state.providerPins);
+        state.currentProviderId = existing.id;
+        closeModal();
+        loginAs('provider');
+        return;
+      }
+      const provider = {
+        id: `LOCAL-PROVIDER-${Date.now()}`,
+        name,
+        owner: '',
+        status: 'PENDING',
+        rating: 0,
+        reviews: 0,
+        services: [],
+        subscription: 'Trial',
+        phone
+      };
+      state.providers.push(provider);
+      state.providerPins[provider.id] = pin;
+      saveLocalObject(PROVIDER_PINS_KEY, state.providerPins);
+      state.currentProviderId = provider.id;
+      closeModal();
+      loginAs('provider');
+    }
+
+    function loginClientByForm() {
+      const username = document.getElementById('clientLoginUsername')?.value?.trim() || '';
+      const phone = document.getElementById('clientLoginPhone')?.value?.trim() || '';
+      const pin = document.getElementById('clientLoginPin')?.value?.trim() || '';
+      const found = state.users.find(user =>
+        user.username.toLowerCase() === username.toLowerCase() ||
+        normalizePhone(user.phone) === normalizePhone(phone) ||
+        String(user.id) === username
+      );
+
+      if (!found) {
+        openModal('Client Not Found', html`
+          <p>No workbook user matched <strong>${username || phone || 'that login'}</strong>.</p>
+          <p class="muted small">Try a username/phone from the USERS sheet, continue as guest, or set a local PIN to create a preview account.</p>
+          <div class="btn-row">
+            <button class="btn" onclick="createLocalClientFromLogin()">Set PIN and Sign In</button>
+            <button class="btn secondary" onclick="startClientGuest(); closeModal()">Continue as Guest</button>
+            <button class="btn secondary" onclick="closeModal()">Try Again</button>
+          </div>
+        `);
+        return;
+      }
+
+      if (state.clientPins[found.id]) {
+        if (!pin) {
+          toast('Enter your preview PIN');
+          return;
+        }
+        if (pin !== state.clientPins[found.id]) {
+          toast('Incorrect PIN');
+          return;
+        }
+      }
+
+      state.currentClientId = found.id;
+      if (state.clientPins[found.id]) {
+        loginAs('client');
+      } else {
+        openSmsPinModal('client');
+      }
+    }
+
+    function createLocalClientFromLogin() {
+      const username = document.getElementById('clientLoginUsername')?.value?.trim() || '';
+      const phone = document.getElementById('clientLoginPhone')?.value?.trim() || '';
+      const pin = document.getElementById('clientLoginPin')?.value?.trim() || '';
+      if (!username && !phone) return toast('Enter a username or phone');
+      if (!pin) return toast('Enter a PIN for preview access');
+      if (usernameExists(username)) return toast('That username already exists');
+      const user = {
+        id: `LOCAL-USER-${Date.now()}`,
+        username,
+        phone,
+        userType: 'Client',
+        smsVerified: true
+      };
+      state.clientPins[user.id] = pin;
+      saveLocalObject(CLIENT_PINS_KEY, state.clientPins);
+      state.users.push(user);
+      state.currentClientId = user.id;
+      closeModal();
+      loginAs('client');
+    }
+
+    function normalizePhone(phone) {
+      return String(phone || '').replace(/\D/g, '');
+    }
+
+    function focusClientLogin() {
+      document.getElementById('clientLoginUsername')?.focus();
+    }
+
+    function clientLogin() {
+      return html`
+        <div class="auth-wrap">
+          ${workbookNotice()}
+          <div class="auth-grid">
+            <div class="auth-hero">
+              <h2>Book wellness care without making an account.</h2>
+              <p>Clients can browse active providers and reserve a time with only a nickname and phone number. After booking, RedSmart can encourage account creation so they can save favorites, view booking history, cancel by SMS, and keep private notes.</p>
+              <div class="privacy-strip">
+                <div>Guest booking</div>
+                <div>Optional account</div>
+                <div>SMS reminders</div>
+                <div>Saved history</div>
+              </div>
+              <div class="choice-grid">
+                <button class="choice" onclick="startClientGuest()">
+                  <strong>Book as guest</strong>
+                  <span>No password. Choose provider, service, date, time, nickname, and phone.</span>
+                </button>
+                <button class="choice" onclick="openCreateClientAccount()">
+                  <strong>Create privacy-first account</strong>
+                  <span>Save favorites, see booking history, rebook faster, and manage SMS preferences.</span>
+                </button>
+                <button class="choice" onclick="focusClientLogin()">
+                  <strong>Sign in with SMS PIN</strong>
+                  <span>Use username and phone. No email or legal name needed.</span>
+                </button>
+              </div>
+            </div>
+            <div class="auth-card">
+              <h3>Client SMS Login</h3>
+              <label>Username or nickname<input id="clientLoginUsername" value=""></label>
+              <label style="margin-top:12px">Phone number<input id="clientLoginPhone" value=""></label>
+              <label style="margin-top:12px">Preview PIN<input id="clientLoginPin" type="password" value=""></label>
+              <button class="btn" style="width:100%; margin-top:14px" onclick="loginClientByForm()">Send SMS PIN</button>
+              <button class="btn secondary" style="width:100%; margin-top:10px" onclick="createLocalClientFromLogin()">Set PIN and Sign In</button>
+              <button class="btn secondary" style="width:100%; margin-top:10px" onclick="startClientGuest()">Continue as Guest</button>
+              <p class="muted small" style="margin-bottom:0">Guest bookings still receive SMS confirmations, but saved history and private notes are available after account creation.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function providerLogin() {
+      return html`
+        <div class="auth-wrap">
+          <div class="auth-grid">
+            <div class="auth-hero">
+              <h2>Provider sign in.</h2>
+              <p>Providers get a business dashboard for services, manual bookings, buffer time, scheduling, payment/tip logs, offline clients, and reviews. This area should require authentication because it contains business records and client communication details.</p>
+              <div class="privacy-strip">
+                <div>Provider PIN</div>
+                <div>Business tools</div>
+                <div>Client masking</div>
+                <div>Subscription plan</div>
+              </div>
+            </div>
+            <div class="auth-card">
+              <h3>Provider Login</h3>
+              <label>Business name<input id="providerLoginBusinessName" value=""></label>
+              <label style="margin-top:12px">Business phone<input id="providerLoginPhone" value=""></label>
+              <label style="margin-top:12px">Provider PIN<input id="providerLoginPin" type="password" value=""></label>
+              <button class="btn" style="width:100%; margin-top:14px" onclick="loginProviderByForm()">Sign In</button>
+              <button class="btn secondary" style="width:100%; margin-top:10px" onclick="createLocalProviderFromLogin()">Set PIN and Continue</button>
+              <button class="btn secondary" style="width:100%; margin-top:10px" onclick="openProviderApplyModal()">Apply as Provider</button>
+              <p class="muted small" style="margin-bottom:0">New providers start as PENDING and are hidden from clients until admin approval.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function adminLogin() {
+      return html`
+        <div class="auth-wrap">
+          <div class="auth-grid">
+            <div class="auth-hero">
+              <h2>Admin access.</h2>
+              <p>Admins manage provider approval, visibility, subscription status, privacy rules, and marketplace quality. This login is separate from providers and clients because it controls platform-wide governance.</p>
+              <div class="privacy-strip">
+                <div>Provider approval</div>
+                <div>Visibility control</div>
+                <div>Subscription oversight</div>
+                <div>Audit trail</div>
+              </div>
+            </div>
+            <div class="auth-card">
+              <h3>Admin Login</h3>
+              <label>Admin username<input value="admin"></label>
+              <label style="margin-top:12px">Security PIN<input type="password" value="0000"></label>
+              <button class="btn" style="width:100%; margin-top:14px" onclick="loginAs('admin')">Sign In</button>
+              <button class="btn secondary" style="width:100%; margin-top:10px" onclick="openSmsPinModal('admin')">Use SMS Backup Code</button>
+              <p class="muted small" style="margin-bottom:0">In production this should use stronger authentication than a demo PIN.</p>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function clientDashboard() {
+      const client = currentClient();
+      const bookings = clientScopedBookings();
+      const nextBooking = bookings[0];
+      const completedBookings = completedClientBookings();
+      return html`
+        ${pageHead('Client Dashboard', 'Book wellness services with a username and phone number only. No legal name, email, address, or payment card is required in this preview.', 'Privacy-first')}
+        ${workbookNotice()}
+        ${client ? `<div class="card" style="margin-bottom:16px"><strong>Signed in as ${client.username}</strong> <span class="muted">Showing bookings that match this account by UserID, phone, or nickname.</span></div>` : '<div class="card" style="margin-bottom:16px"><strong>No workbook user selected.</strong> <span class="muted">Sign in from USERS to see account bookings.</span></div>'}
+        <div class="privacy-strip">
+          <div>No legal names</div>
+          <div>Phone/SMS only</div>
+          <div>Optional notes</div>
+          <div>No tracking profile</div>
+        </div>
+        <div class="grid metrics">
+          ${metric(bookings.length, 'Upcoming bookings')}
+          ${metric(completedBookings.length, 'Completed visits')}
+          ${metric('N/A', 'Average provider rating')}
+          ${metric(state.favorites.length, 'Favorite providers')}
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card">
+            <h3>Next Appointment</h3>
+            ${bookings.length ? `<div class="item">
+              <div class="item-head">
+                <strong>${nextBooking.service}</strong>
+                <span class="status confirmed-status">${nextBooking.status}</span>
+              </div>
+              <p class="muted">${providerNameForBooking(nextBooking)}, ${nextBooking.date || 'Date TBD'} at ${nextBooking.time || 'Time TBD'}</p>
+              <div class="btn-row">
+                <button class="btn" onclick="openBookingModal()">Book Again</button>
+                <button class="btn secondary" onclick="openSmsModal()">SMS Details</button>
+                <button class="btn secondary" onclick="openClientReview('${nextBooking.kind || 'online'}', '${nextBooking.id}')">Review Provider</button>
+              </div>
+            </div>` : '<div class="item"><strong>No bookings for this client.</strong><br><span class="muted">Bookings appear when their UserID, phone, or nickname matches this account.</span></div>'}
+          </div>
+          <div class="card">
+            <h3>Recommended Providers</h3>
+            <div class="list">
+              ${state.providers.filter(provider => provider.status === 'ACTIVE').slice(0, 3).map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">${serviceListForClient(provider.services)}</span></div>`).join('') || '<div class="item"><strong>No active providers yet.</strong><br><span class="muted">Admin has not approved providers in the workbook.</span></div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function clientProviders() {
+      const activeProviders = state.providers.filter(provider => provider.status === 'ACTIVE');
+      return html`
+        ${pageHead('Browse Active Providers', 'Clients only see providers approved by RedSmart admin. Each provider shows ratings, services, and next available appointment.', 'Marketplace')}
+        ${workbookNotice()}
+        <div class="grid three">
+          ${activeProviders.length ? activeProviders.map(provider => html`
+            <div class="card">
+              <div class="item-head">
+                <div>
+                  <h3>${provider.name}</h3>
+                  <p class="muted">${serviceListForClient(provider.services)}</p>
+                </div>
+                <span class="pill">${provider.rating} stars</span>
+              </div>
+            <p class="small muted">${provider.reviews} reviews. Service duration is handled in scheduling.</p>
+              <div class="btn-row">
+                <button class="btn" onclick="openBookingModal('${provider.id}')">Book</button>
+                <button class="btn secondary" onclick="toggleFavoriteProvider('${provider.id}')">${state.favorites.includes(String(provider.id)) ? 'Favorited' : 'Favorite'}</button>
+              </div>
+            </div>
+          `).join('') : '<div class="card"><h3>No active providers yet</h3><p class="muted">Admin has not approved any provider profiles from the workbook. Clients should not see demo providers here.</p></div>'}
+        </div>
+      `;
+    }
+
+    function clientBookings() {
+      const client = currentClient();
+      const bookings = clientScopedBookings();
+      const completedBookings = completedClientBookings();
+      return html`
+        ${pageHead('My Bookings', 'Clients can see upcoming appointments, booking history, private notes, and post-service ratings.', 'SMS confirmations')}
+        ${client ? `<div class="card" style="margin-bottom:16px"><strong>${client.username}</strong> <span class="muted">Showing workbook rows that match UserID ${client.id}, phone, or nickname.</span></div>` : '<div class="card" style="margin-bottom:16px"><strong>No client account selected.</strong> <span class="muted">Sign in with a USERS row to see account-specific bookings.</span></div>'}
+        <div class="grid two">
+          <div class="card">
+            <h3>Upcoming</h3>
+            <div class="list">
+              ${bookings.length ? bookings.map(booking => html`
+                <div class="item">
+                  <div class="item-head"><strong>${booking.date || 'Date TBD'}, ${booking.time || 'Time TBD'}</strong><span class="status confirmed-status">${booking.status}</span></div>
+                  <p class="muted">${booking.service} with ${providerNameForBooking(booking)}. Client: ${booking.nickname || client?.username || 'Client'}. Source: ${booking.source || 'App'}.</p>
+                  <div class="btn-row">
+                    <button class="btn secondary" onclick="cancelAppointment('${booking.kind || 'online'}', '${booking.id}')">Cancel</button>
+                    <button class="btn secondary" onclick="sendSmsPreview('${booking.kind || 'online'}', '${booking.id}')">Text Provider</button>
+                    <button class="btn secondary" onclick="openClientReview('${booking.kind || 'online'}', '${booking.id}')">Review Provider</button>
+                  </div>
+                </div>
+              `).join('') : '<div class="item"><strong>No active bookings for this client.</strong><br><span class="muted">If you expected bookings here, check that the booking UserID, phone, or nickname matches this account.</span></div>'}
+            </div>
+          </div>
+          <div class="card">
+            <h3>History & Reviews</h3>
+            <div class="list">
+              ${completedBookings.length ? completedBookings.map(booking => `<div class="item"><strong>${booking.service}</strong><br><span class="muted">${formatDisplayDate(booking.date)} at ${formatDisplayTime(booking.time)} · ${booking.status}</span><div class="btn-row" style="margin-top:10px"><button class="btn secondary" onclick="openClientReview('${booking.kind || 'online'}', '${booking.id}')">Review Provider</button></div></div>`).join('') : '<div class="item"><strong>No completed bookings yet.</strong><br><span class="muted">Completed bookings that match this account will appear here.</span></div>'}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function clientPrivacy() {
+      return html`
+        ${pageHead('Privacy Controls', 'This screen shows the privacy-first account model: phone-based identity, minimal records, SMS communication, and deletion requests.', 'Minimal data')}
+        <div class="grid two">
+          <div class="card">
+            <h3>Collected Data</h3>
+            <div class="list">
+              <div class="item"><strong>Username</strong><br><span class="muted">Sunseeker, chosen by the client</span></div>
+              <div class="item"><strong>Phone</strong><br><span class="muted">Masked in provider views unless communication is needed</span></div>
+              <div class="item"><strong>Booking records</strong><br><span class="muted">Service, date, time, provider, status</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Not Collected</h3>
+            <div class="list">
+              <div class="item">Legal name, email, address, medical history</div>
+              <div class="item">Payment card data or bank account details</div>
+              <div class="item">Third-party ad tracking or behavioral profiles</div>
+            </div>
+            <button class="btn" style="margin-top:14px" onclick="requestDataDeletion()">Request Data Deletion</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function providerDashboard() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Provider Dashboard');
+      const allBookings = providerAppointments();
+      const bookings = filteredProviderAppointments();
+      const providerPayments = filteredProviderPayments();
+      const visibleBookingIds = new Set(bookings.map(booking => String(booking.id)));
+      const paidAppointmentRevenue = bookings
+        .filter(booking => booking.paid)
+        .reduce((total, booking) => total + Number(booking.amount || 0), 0);
+      const paidAppointmentTips = bookings
+        .filter(booking => booking.paid)
+        .reduce((total, booking) => total + Number(booking.tip || 0), 0);
+      const loggedServiceRevenue = providerPayments
+        .filter(payment => String(payment.type).toLowerCase() !== 'tip' && !visibleBookingIds.has(String(payment.bookingId)))
+        .reduce((total, payment) => total + payment.amount, 0);
+      const loggedTips = providerPayments
+        .filter(payment => String(payment.type).toLowerCase() === 'tip' && !visibleBookingIds.has(String(payment.bookingId)))
+        .reduce((total, payment) => total + payment.amount, 0);
+      const serviceRevenue = paidAppointmentRevenue + loggedServiceRevenue;
+      const tips = paidAppointmentTips + loggedTips;
+      const manualCount = bookings.filter(booking => ['offline', 'manual', 'phone', 'text', 'walk-in'].includes(String(booking.source || booking.kind).toLowerCase())).length;
+      return html`
+        ${pageHead('Provider Dashboard', 'One place for appointments, service revenue, tips, walk-ins, buffer time, ratings, and the next appointment.', provider?.name || 'Provider')}
+        ${workbookNotice()}
+        ${provider ? '' : '<div class="card" style="margin-bottom:16px"><strong>No provider selected.</strong> <span class="muted">Sign in as a provider to see your dashboard.</span></div>'}
+        <div class="grid metrics">
+          ${metric(bookings.length, 'Total appointments')}
+          ${metric(formatCurrency(serviceRevenue), 'Service revenue')}
+          ${metric(formatCurrency(tips), 'Tips')}
+          ${metric(manualCount, 'Manual/offline')}
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="item-head">
+            <div>
+              <h3>Upcoming Schedule</h3>
+              <p class="muted small" style="margin:0">${activeFilterSummary()} · Showing ${bookings.length} of ${allBookings.length}</p>
+            </div>
+            <div class="btn-row">
+              <button class="btn secondary" onclick="openCalendarSummary()">Calendar</button>
+              <button class="btn secondary" onclick="openScheduleFilters()">Filter</button>
+              <button class="btn secondary" onclick="clearScheduleFilters()">Clear</button>
+            </div>
+          </div>
+          ${renderProviderAgenda(bookings)}
+        </div>
+      `;
+    }
+
+    function providerServices() {
+      const provider = currentProvider() || { id: 1, services: [] };
+      if (!currentProvider()) return noProviderState('Service Management');
+      return html`
+        ${pageHead('Service Management', 'Providers can add, update, remove, price, and set duration for services shown in the client marketplace.', 'Provider tools')}
+        <div class="grid two">
+          <div class="card">
+            <h3>Current Services</h3>
+            <div class="list">
+              ${provider.services.map((service, index) => {
+                const details = parseServiceDetails(service);
+                return html`
+                <div class="item">
+                  <div class="item-head">
+                    <strong>${details.name}</strong>
+                    <button class="btn secondary" onclick="removeProviderService('${provider.id}', ${index})">Remove</button>
+                  </div>
+                  <div class="form-grid">
+                    <label>Service name<input id="service-name-${index}" value="${details.name}"></label>
+                    <label>Duration<select id="service-duration-${index}">
+                      ${[30, 45, 60, 75, 90, 120].map(minutes => `<option value="${minutes}" ${details.duration === minutes ? 'selected' : ''}>${minutes} minutes</option>`).join('')}
+                    </select></label>
+                    <label>Price<input id="service-price-${index}" value="${details.price}"></label>
+                    <label>Buffer<select id="service-buffer-${index}">
+                      ${[0, 10, 15, 20, 30, 45, 60].map(minutes => `<option value="${minutes}" ${details.buffer === minutes ? 'selected' : ''}>${minutes} minutes</option>`).join('')}
+                    </select></label>
+                  </div>
+                  <button class="btn secondary" style="margin-top:12px" onclick="saveProviderServiceDetails('${provider.id}', ${index})">Save Service</button>
+                  <span class="muted small" style="display:block;margin-top:8px">Duration is used when calculating client-facing availability.</span>
+                </div>
+              `;
+              }).join('')}
+            </div>
+          </div>
+          <div class="card">
+            <h3>Add Service</h3>
+            <div class="form-grid">
+              <label>Service name<input id="serviceName" value="Prenatal Massage"></label>
+              <label>Duration<select id="serviceDuration"><option value="30">30 minutes</option><option value="45">45 minutes</option><option value="60" selected>60 minutes</option><option value="75">75 minutes</option><option value="90">90 minutes</option><option value="120">120 minutes</option></select></label>
+              <label>Price<input id="servicePrice" value="$135"></label>
+              <label>Buffer<select id="serviceBuffer"><option value="0">0 minutes</option><option value="10">10 minutes</option><option value="15">15 minutes</option><option value="20">20 minutes</option><option value="30" selected>30 minutes</option><option value="45">45 minutes</option><option value="60">60 minutes</option></select></label>
+            </div>
+            <button class="btn" style="margin-top:14px" onclick="addProviderService('${provider.id}')">Add Service</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function providerSchedule() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Availability & Schedule Planning');
+      const editingEffectiveStart = latestAvailabilityStart(provider.id);
+      const availabilityRows = providerAvailabilityForVersion(provider.id, editingEffectiveStart);
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      return html`
+        ${pageHead('Availability & Schedule Planning', 'Providers can set weekly availability, buffer time, and block vacation, training, closures, and admin time.', provider?.name || 'Provider')}
+        <div class="grid two">
+          <div class="card">
+            <h3>Weekly Availability</h3>
+            <label style="margin-bottom:14px">Effective start for this weekly schedule
+              <input id="availabilityEffectiveStart" type="date" value="${editingEffectiveStart}">
+              <span class="muted small">Use a future date to plan ahead. Dates before it keep using the previous schedule version.</span>
+            </label>
+            <datalist id="timeOptions">
+              ${timeOptionsHtml('')}
+            </datalist>
+            <div class="list">
+              ${days.map(day => {
+                const key = day.toLowerCase();
+                const rows = availabilityRows.filter(item => item.dayOfWeek === day);
+                const activeRows = rows.filter(row => row.isActive);
+                const renderRows = activeRows.length ? activeRows : [{
+                  id: '',
+                  dayOfWeek: day,
+                  startTime: '09:00 AM',
+                  endTime: '05:00 PM',
+                  slotIntervalMinutes: 30,
+                  bufferMinutes: 0,
+                  isActive: false
+                }];
+                return html`
+                  <div class="item">
+                    <div class="item-head">
+                      <strong>${day}</strong>
+                      <div class="btn-row">
+                        <label style="display:flex;align-items:center;gap:8px;font-weight:800"><input id="avail-active-${key}" type="checkbox" ${activeRows.length ? 'checked' : ''}> Open</label>
+                        <button class="btn secondary" onclick="addAvailabilityRange('${day}')">Add range</button>
+                      </div>
+                    </div>
+                    <div id="avail-ranges-${key}" data-day="${day}">
+                      ${renderRows.map((row, index) => renderAvailabilityRange(day, row, index)).join('')}
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+            <button class="btn" style="margin-top:14px" onclick="saveProviderAvailability()">Save Availability</button>
+          </div>
+          <div class="card">
+            <h3>Block Time Away</h3>
+            <div class="form-grid">
+              <label>Block type<select><option>Vacation</option><option>Training</option><option>Closure</option><option>Admin</option></select></label>
+              <label>Recurring<select><option>No</option><option>Weekly</option><option>Monthly</option></select></label>
+              <label>Start date<input type="date" value="2026-05-05"></label>
+              <label>End date<input type="date" value="2026-05-12"></label>
+            </div>
+            <textarea style="margin-top:14px" placeholder="Optional provider note">Family vacation. Notify affected clients by SMS.</textarea>
+            <button class="btn" style="margin-top:14px" onclick="openConflictModal()">Preview Conflicts</button>
+            <hr style="border:0;border-top:1px solid var(--line);margin:18px 0">
+            <div class="item-head">
+              <h3>Monthly Preview</h3>
+              <div class="btn-row">
+                <button class="btn secondary" onclick="changeSchedulePreviewMonth(-1)">Previous</button>
+                <input type="month" id="schedulePreviewMonth" value="${state.schedulePreviewMonth}" onchange="setSchedulePreviewMonth()">
+                <button class="btn secondary" onclick="changeSchedulePreviewMonth(1)">Next</button>
+              </div>
+            </div>
+            ${renderMonthlySchedulePreview(provider, state.schedulePreviewMonth)}
+          </div>
+        </div>
+      `;
+    }
+
+    function renderMonthlySchedulePreview(provider, monthValue) {
+      if (!provider) {
+        return '<div class="item"><strong>No provider selected.</strong></div>';
+      }
+
+      const [year, month] = String(monthValue || '').split('-').map(Number);
+      if (!year || !month) {
+        return '<div class="item"><strong>Select a month to preview availability.</strong></div>';
+      }
+
+      const daysInMonth = new Date(year, month, 0).getDate();
+      const firstDayOffset = new Date(year, month - 1, 1).getDay();
+      const weekdayHeaders = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday']
+        .map(day => `<div class="calendar-weekday">${day.slice(0, 3)}</div>`);
+      const cells = Array.from({ length: firstDayOffset }, () => '<div class="day empty" aria-hidden="true"></div>');
+
+      for (let day = 1; day <= daysInMonth; day += 1) {
+        const dateValue = `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+        const bookings = bookingsForProviderDate(provider.id, dateValue);
+        const availabilityRows = availabilityForDate(provider.id, dateValue);
+        const timeOffRows = providerTimeOffForDate(provider.id, dateValue);
+        const slotCount = availableSlotsFor(provider.id, dateValue).length;
+        const className = timeOffRows.length ? 'blocked' : bookings.length ? 'has-bookings' : availabilityRows.length ? 'available' : '';
+        const note = timeOffRows.length
+          ? 'Blocked'
+          : bookings.length
+            ? `${bookings.length} booked · ${slotCount} open`
+            : availabilityRows.length
+              ? `${slotCount} open`
+              : 'Closed';
+        cells.push(`<button class="day ${className}" onclick="openMonthlyDayDetails('${provider.id}', '${dateValue}')"><div class="num">${day}</div><div class="note">${note}</div></button>`);
+      }
+
+      return html`
+        <p class="muted small" style="margin-top:0">${monthLabel(monthValue)} uses provider availability, time off, and appointments from the workbook.</p>
+        <div class="calendar-grid">${weekdayHeaders.join('')}${cells.join('')}</div>
+      `;
+    }
+
+    function openMonthlyDayDetails(providerId, dateValue) {
+      const provider = findProvider(providerId) || currentProvider();
+      const bookings = sortedBookings(bookingsForProviderDate(providerId, dateValue));
+      const availabilityRows = availabilityForDate(providerId, dateValue);
+      const timeOffRows = providerTimeOffForDate(providerId, dateValue);
+      const slots = availableSlotsFor(providerId, dateValue);
+      const windows = availableWindowsFor(providerId, dateValue);
+
+      openModal(`${formatDisplayDate(dateValue)} Schedule`, html`
+        <div class="item">
+          <strong>${provider?.name || 'Provider'}</strong><br>
+          <span class="muted">${bookings.length} appointment${bookings.length === 1 ? '' : 's'} · ${slots.length} open slot${slots.length === 1 ? '' : 's'}</span>
+        </div>
+        ${timeOffRows.length ? html`
+          <h3 style="margin-top:16px">Blocked Time</h3>
+          <div class="list">
+            ${timeOffRows.map(row => `<div class="item"><strong>${row.BlockType || row.blockType || 'Blocked'}</strong><br><span class="muted">${row.Description || row.description || 'Provider time away'}</span></div>`).join('')}
+          </div>
+        ` : ''}
+        <h3 style="margin-top:16px">Appointments</h3>
+        <div class="list">
+          ${bookings.length ? bookings.map(booking => html`
+            <div class="item">
+              <div class="item-head">
+                <strong>${formatDisplayTime(booking.time)} · ${booking.service}</strong>
+                <span class="status ${booking.paid ? 'active-status' : 'pending-status'}">${booking.paid ? 'PAID' : 'UNPAID'}</span>
+              </div>
+              <span class="muted">${booking.nickname || 'Client'} · ${booking.duration || 'Duration TBD'} min · ${booking.source || booking.kind || 'Booking'}</span>
+              <div class="btn-row" style="margin-top:10px">
+                <button class="btn secondary" onclick="openAppointmentDetail('${booking.kind || 'online'}', '${booking.id}')">Details</button>
+              </div>
+            </div>
+          `).join('') : '<div class="item"><strong>No appointments on this day.</strong></div>'}
+        </div>
+        <h3 style="margin-top:16px">Availability</h3>
+        <div class="list">
+          ${windows.length ? windows.map(window => `<div class="item"><strong>${minutesToDisplayTime(window.start)} - ${minutesToDisplayTime(window.end)}</strong><br><span class="muted">${window.slotIntervalMinutes} minute slots · service buffers apply when booking</span></div>`).join('') : availabilityRows.length ? '<div class="item"><strong>No open windows remain.</strong><br><span class="muted">Configured availability is fully blocked by bookings.</span></div>' : '<div class="item"><strong>Closed or no active availability.</strong></div>'}
+        </div>
+      `);
+    }
+
+    function changeSchedulePreviewMonth(delta) {
+      state.schedulePreviewMonth = addMonths(state.schedulePreviewMonth, delta);
+      render();
+    }
+
+    function setSchedulePreviewMonth() {
+      state.schedulePreviewMonth = document.getElementById('schedulePreviewMonth')?.value || state.schedulePreviewMonth;
+      render();
+    }
+
+    function renderAvailabilityRange(day, row, index) {
+      const key = day.toLowerCase();
+      const safeId = `${key}-${index}-${String(row.id || 'new').replace(/\W/g, '')}`;
+      return html`
+        <div class="range-block" data-range-block="true" data-day="${day}">
+          <div class="item-head">
+            <strong>Range ${index + 1}</strong>
+            <button class="btn secondary" onclick="removeAvailabilityRange(this)">Remove</button>
+          </div>
+          <div class="form-grid">
+            <input data-field="id" type="hidden" value="${row.id || ''}">
+            <label>Start
+              <div class="time-input-wrap">
+                <input id="avail-start-${safeId}" data-field="startTime" list="timeOptions" value="${normalizeTimeInput(row.startTime || '09:00 AM')}" oninput="normalizeTimeFieldWhenComplete('avail-start-${safeId}')" onblur="normalizeTimeField('avail-start-${safeId}')">
+                <span class="muted small">Type 14:30 and it converts to 2:30 PM.</span>
+              </div>
+            </label>
+            <label>End
+              <div class="time-input-wrap">
+                <input id="avail-end-${safeId}" data-field="endTime" list="timeOptions" value="${normalizeTimeInput(row.endTime || '05:00 PM')}" oninput="normalizeTimeFieldWhenComplete('avail-end-${safeId}')" onblur="normalizeTimeField('avail-end-${safeId}')">
+                <span class="muted small">Shown in 12-hour format.</span>
+              </div>
+            </label>
+            <label>Slot interval<input data-field="slotIntervalMinutes" type="number" value="${row.slotIntervalMinutes || 30}"></label>
+          </div>
+        </div>
+      `;
+    }
+
+    function addAvailabilityRange(day) {
+      const key = day.toLowerCase();
+      const container = document.getElementById(`avail-ranges-${key}`);
+      if (!container) return;
+      const index = container.querySelectorAll('[data-range-block="true"]').length;
+      container.insertAdjacentHTML('beforeend', renderAvailabilityRange(day, {
+        id: '',
+        startTime: '09:00 AM',
+        endTime: '05:00 PM',
+        slotIntervalMinutes: 30,
+        bufferMinutes: 0
+      }, index));
+      const active = document.getElementById(`avail-active-${key}`);
+      if (active) active.checked = true;
+    }
+
+    function removeAvailabilityRange(button) {
+      const block = button.closest('[data-range-block="true"]');
+      const container = block?.parentElement;
+      block?.remove();
+      if (container && !container.querySelector('[data-range-block="true"]')) {
+        const day = container.dataset.day;
+        addAvailabilityRange(day);
+        const active = document.getElementById(`avail-active-${day.toLowerCase()}`);
+        if (active) active.checked = false;
+      }
+    }
+
+    function providerPayments() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Payments & Tips Logging');
+      const payments = providerPaymentsForCurrent();
+      const serviceTotal = payments.filter(payment => String(payment.type).toLowerCase() !== 'tip').reduce((total, payment) => total + payment.amount, 0);
+      const tipTotal = payments.filter(payment => String(payment.type).toLowerCase() === 'tip').reduce((total, payment) => total + payment.amount, 0);
+      const bookingCount = providerAppointments().length;
+      return html`
+        ${pageHead('Payments & Tips Logging', 'The platform logs service fees and tips separately. Clients pay providers directly through cash, PayPal, Venmo, Apple Pay, or Zelle.', 'No card processing')}
+        <div class="grid metrics">
+          ${metric(formatCurrency(serviceTotal), 'Service fees')}
+          ${metric(formatCurrency(tipTotal), 'Tips')}
+          ${metric(formatCurrency(serviceTotal + tipTotal), 'Total logged')}
+          ${metric(bookingCount, 'Synced bookings')}
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Payment Log</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Client</th><th>Service</th><th>Fee</th><th>Tip</th><th>Method</th><th>Status</th></tr></thead>
+              <tbody>
+                ${payments.length ? payments.map(payment => html`
+                  <tr><td>Booking ${payment.bookingId || '-'}</td><td>${payment.type}</td><td>${String(payment.type).toLowerCase() === 'tip' ? '$0' : formatCurrency(payment.amount)}</td><td>${String(payment.type).toLowerCase() === 'tip' ? formatCurrency(payment.amount) : '$0'}</td><td>${payment.method}</td><td><span class="status active-status">LOGGED</span></td></tr>
+                `).join('') : '<tr><td colspan="6">No payments logged for this provider.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function providerClients() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Offline Client Tracking');
+      const offlineBookings = providerOfflineBookingsForCurrent();
+      const defaultDate = '2026-04-25';
+      const defaultDuration = firstServiceDuration(provider);
+      const slots = provider ? availableSlotsFor(provider.id, defaultDate, defaultDuration) : [];
+      return html`
+        ${pageHead('Offline Client Tracking', 'Providers can add walk-ins and phone/text bookings without forcing the client through the app.', 'Manual bookings')}
+        <div class="grid two">
+          <div class="card">
+            <h3>Add Phone, Text, or Walk-In Booking</h3>
+            <div class="form-grid">
+              <label>Nickname<input id="offlineClientName" value="Marcus"></label>
+              <label>Phone<input id="offlineClientPhone" value="(***) ***-8831"></label>
+              <label>Service<select id="offlineService" onchange="syncOfflineDurationFromService()">${renderServiceOptions(provider)}</select></label>
+              <label>Source<select id="offlineSource" onchange="refreshOfflineClientOptions()"><option>Phone</option><option>Text</option><option>Walk-in</option></select></label>
+              <label>Date<input id="offlineDate" type="date" value="${defaultDate}" onchange="refreshOfflineClientOptions()"></label>
+              <label>Available time<select id="offlineTime">${renderOfflineSlotOptions(slots)}</select></label>
+              <label>Override availability<select id="offlineOverrideAvailability" onchange="toggleOfflineOverride()"><option value="No" selected>No</option><option value="Yes">Yes</option></select></label>
+              <label id="offlineManualTimeWrap" style="display:none">Manual time<input id="offlineManualTime" type="time" value="12:00"></label>
+              <label>Duration<select id="offlineDuration" onchange="refreshOfflineClientOptions()">
+                ${[30, 45, 60, 75, 90, 120].map(minutes => `<option value="${minutes}" ${defaultDuration === minutes ? 'selected' : ''}>${minutes} minutes</option>`).join('')}
+              </select></label>
+              <label>Payment status<select id="offlinePaymentStatus" onchange="toggleOfflinePaymentFields()"><option value="Unpaid" selected>Unpaid / future booking</option><option value="Paid">Paid now</option></select></label>
+            </div>
+            <p id="offlineAvailabilityMessage" class="muted small">${availabilityMessage(provider?.id, defaultDate, slots)}</p>
+            <p id="offlineOverrideMessage" class="muted small" style="display:none">Override is on. This booking can be saved outside calculated availability and will still block client-facing times.</p>
+            <div id="offlinePaymentFields" class="form-grid" style="margin-top:14px;display:none">
+              <label>Payment<input id="offlinePayment" type="number" min="0" value=""></label>
+              <label>Tip<input id="offlineTip" type="number" min="0" value=""></label>
+              <label>Method<select id="offlineMethod"><option>Cash</option><option>Venmo</option><option>PayPal</option><option>Apple Pay</option><option>Zelle</option></select></label>
+            </div>
+            <textarea id="offlineNotes" style="margin-top:14px" placeholder="Provider notes">Prefers firm pressure. Asked for quiet room.</textarea>
+            <button class="btn" style="margin-top:14px" onclick="saveOfflineBookingFromForm()">Save Offline Booking</button>
+            <p class="muted small">Scheduled offline bookings block client-facing availability even when no payment has been collected yet.</p>
+          </div>
+          <div class="card">
+            <h3>Recent Offline Clients</h3>
+            <div class="list">
+              ${offlineBookings.length ? offlineBookings.slice(-6).reverse().map(booking => html`
+                <div class="item">
+                  <strong>${booking.nickname}</strong><br>
+                  <span class="muted">${booking.service} · ${formatDisplayDate(booking.date)}${booking.time ? ` at ${formatDisplayTime(booking.time)}` : ''} · ${booking.source} · ${booking.paid ? `Paid ${formatCurrency(booking.amount || 0)}` : 'Unpaid / scheduled'}</span>
+                </div>
+              `).join('') : html`
+                <div class="item"><strong>No offline bookings yet.</strong><br><span class="muted">Save a phone, text, or walk-in booking to see it here and on the dashboard.</span></div>
+              `}
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function providerReviews() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Reviews & Feedback');
+      const ratings = providerRatingsForCurrent();
+      const averageRating = ratings.length
+        ? (ratings.reduce((total, rating) => total + Number(rating.StarRating || rating.starRating || 0), 0) / ratings.length).toFixed(1)
+        : 'N/A';
+      const wouldReturnCount = ratings.filter(rating => String(rating.WouldReturn || rating.wouldReturn).toLowerCase() === 'yes' || rating.WouldReturn === true).length;
+      return html`
+        ${pageHead('Reviews & Feedback', 'Clients can rate providers after completed services. Providers see average rating, review count, and would-return percentage.', 'Quality signals')}
+        <div class="grid metrics">
+          ${metric(averageRating, 'Average rating')}
+          ${metric(ratings.length, 'Reviews')}
+          ${metric(ratings.length ? `${Math.round((wouldReturnCount / ratings.length) * 100)}%` : 'N/A', 'Would return')}
+          ${metric(Math.min(ratings.length, 3), 'Needs reply')}
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card"><h3>Recent Reviews</h3><div class="list">${ratings.length ? ratings.slice(-5).reverse().map(rating => html`<div class="item"><strong>${rating.StarRating || rating.starRating || '?'} stars</strong><br><span class="muted">${rating.ReviewText || rating.reviewText || 'No review text.'}</span></div>`).join('') : '<div class="item"><strong>No reviews yet.</strong><br><span class="muted">Completed appointments can generate ratings.</span></div>'}</div></div>
+          <div class="card"><h3>Rating Follow-Up</h3><p class="muted">Use review themes to update availability, service descriptions, and client communication templates.</p><button class="btn" onclick="openReviewReply()">Reply to Review</button></div>
+        </div>
+      `;
+    }
+
+    function noProviderState(title) {
+      return html`
+        ${pageHead(title, 'No provider profile is signed in yet. Create or apply for a provider account to use this section.', 'Provider setup needed')}
+        ${workbookNotice()}
+        <div class="card">
+          <h3>No Provider Profile</h3>
+          <p class="muted">The workbook did not return a matching provider, so RedSmart will not show demo services, bookings, or offline clients by default.</p>
+          <div class="btn-row" style="margin-top:14px">
+            <button class="btn" onclick="setView('provider-login')">Provider Login</button>
+            <button class="btn secondary" onclick="openProviderApplyModal()">Apply as Provider</button>
+          </div>
+        </div>
+      `;
+    }
+
+    function adminDashboard() {
+      const active = state.providers.filter(provider => provider.status === 'ACTIVE');
+      const pending = state.providers.filter(provider => provider.status === 'PENDING');
+      const inactive = state.providers.filter(provider => provider.status === 'INACTIVE');
+      const monthlyRevenue = state.providers
+        .filter(provider => provider.status === 'ACTIVE')
+        .reduce((total, provider) => total + planMonthlyFee(provider.subscription), 0);
+      return html`
+        ${pageHead('Admin Dashboard', 'Admin oversees provider onboarding, visibility, subscription status, marketplace quality, and platform-level governance.', 'Platform admin')}
+        ${workbookNotice()}
+        <div class="grid metrics">
+          ${metric(active.length, 'Active providers')}
+          ${metric(pending.length, 'Pending approval')}
+          ${metric(inactive.length, 'Inactive providers')}
+          ${metric(formatCurrency(monthlyRevenue), 'Monthly recurring revenue')}
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Admin Alerts</h3>
+          <div class="list">
+            ${pending.length ? pending.map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">Pending approval. Review profile, services, and subscription setup.</span></div>`).join('') : ''}
+            ${inactive.length ? inactive.map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">Inactive provider hidden from client marketplace.</span></div>`).join('') : ''}
+            ${!pending.length && !inactive.length ? '<div class="item"><strong>No admin alerts.</strong><br><span class="muted">There are no pending or inactive providers in the current workbook data.</span></div>' : ''}
+          </div>
+        </div>
+      `;
+    }
+
+    function adminProviders() {
+      return html`
+        ${pageHead('Provider Management', 'Approve, pause, reactivate, and review every provider. Only ACTIVE providers appear to clients.', 'Governance')}
+        <div class="card">
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Provider</th><th>Owner</th><th>Status</th><th>Rating</th><th>Plan</th><th>Actions</th></tr></thead>
+              <tbody>${providerRows()}</tbody>
+            </table>
+          </div>
+        </div>
+      `;
+    }
+
+    function adminGovernance() {
+      return html`
+        ${pageHead('Governance & Privacy', 'Admin controls platform quality while preserving client privacy and minimizing sensitive data collection.', 'Privacy-first')}
+        <div class="grid two">
+          <div class="card">
+            <h3>Provider Lifecycle</h3>
+            <div class="timeline">
+              <div class="timeline-row"><strong>Pending</strong><span>Provider applies, hidden from marketplace</span><span class="status pending-status">REVIEW</span></div>
+              <div class="timeline-row"><strong>Active</strong><span>Approved provider appears to clients</span><span class="status active-status">LIVE</span></div>
+              <div class="timeline-row"><strong>Inactive</strong><span>Paused provider hidden from clients</span><span class="status inactive-status">HIDDEN</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Privacy Rules</h3>
+            <div class="list">
+              <div class="item">Clients use username and phone, not legal identity.</div>
+              <div class="item">SMS communication replaces email as the default channel.</div>
+              <div class="item">Payment processing is outside the platform; only logs are stored.</div>
+              <div class="item">Optional notes are controlled by client/provider context.</div>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
+    function adminRevenue() {
+      const plans = [
+        { name: 'Starter', price: 19.99, description: 'Core listing, client booking, offline bookings, and basic weekly availability.' },
+        { name: 'Professional', price: 29.99, description: 'Advanced schedule tools, multiple availability ranges, reviews, payment/tip logs, and provider operations.' },
+        { name: 'Scale', price: 49.99, description: 'Multi-staff expansion, reporting, priority support, and advanced platform operations.' }
+      ];
+      const payingProviders = state.providers.filter(provider => provider.status === 'ACTIVE' && planMonthlyFee(provider.subscription) > 0);
+      const monthlyRevenue = payingProviders.reduce((total, provider) => total + planMonthlyFee(provider.subscription), 0);
+      return html`
+        ${pageHead('Subscription Revenue', 'Approved business model: providers pay the platform through subscriptions; clients pay providers directly for services.', 'Subscription model')}
+        <div class="grid metrics">
+          ${metric('$19.99', 'Starter monthly')}
+          ${metric('$29.99', 'Professional monthly')}
+          ${metric(payingProviders.length, 'Paying providers')}
+          ${metric('0%', 'Client transaction fee')}
+        </div>
+        <div class="grid three" style="margin-top:16px">
+          ${plans.map(plan => html`
+            <div class="card">
+              <h3>${plan.name}</h3>
+              <div class="metric"><div class="value">${formatCurrency(plan.price)}</div><div class="label">per month</div></div>
+              <p class="muted">${plan.description}</p>
+            </div>
+          `).join('')}
+        </div>
+        <div class="card" style="margin-top:16px">
+          <h3>Billing Snapshot</h3>
+          <div class="table-wrap">
+            <table>
+              <thead><tr><th>Provider</th><th>Plan</th><th>Monthly Fee</th><th>Status</th><th>Next Billing</th></tr></thead>
+              <tbody>
+                ${state.providers.length ? state.providers.map(provider => html`
+                  <tr>
+                    <td>${provider.name}</td>
+                    <td>${provider.subscription || 'Trial'}<br><span class="muted small">${planDescription(provider.subscription)}</span></td>
+                    <td>${formatCurrency(planMonthlyFee(provider.subscription))}</td>
+                    <td><span class="status ${statusClass(provider.status)}">${provider.status}</span></td>
+                    <td>${provider.status === 'ACTIVE' ? 'Next monthly cycle' : 'After approval'}</td>
+                  </tr>
+                `).join('') : '<tr><td colspan="5">No providers are loaded, so there is no subscription revenue yet.</td></tr>'}
+              </tbody>
+            </table>
+          </div>
+          <p class="muted small">Current projected MRR: ${formatCurrency(monthlyRevenue)} based on ACTIVE providers only.</p>
+        </div>
+      `;
+    }
+
+    const renderers = {
+      'client-login': clientLogin,
+      'provider-login': providerLogin,
+      'admin-login': adminLogin,
+      'client-dashboard': clientDashboard,
+      'client-providers': clientProviders,
+      'client-bookings': clientBookings,
+      'client-privacy': clientPrivacy,
+      'provider-dashboard': providerDashboard,
+      'provider-services': providerServices,
+      'provider-schedule': providerSchedule,
+      'provider-payments': providerPayments,
+      'provider-clients': providerClients,
+      'provider-reviews': providerReviews,
+      'admin-dashboard': adminDashboard,
+      'admin-providers': adminProviders,
+      'admin-governance': adminGovernance,
+      'admin-revenue': adminRevenue
+    };
+
+    function renderNav() {
+      const nav = document.getElementById('nav');
+      let items = navConfig[state.role];
+
+      if (state.role === 'client' && state.sessions.client !== 'account') {
+        items = [
+          ['client-login', 'Start / Login'],
+          ['client-providers', 'Browse Providers']
+        ];
+      }
+
+      if ((state.role === 'provider' || state.role === 'admin') && state.sessions[state.role] !== 'account') {
+        items = [[`${state.role}-login`, state.role === 'provider' ? 'Provider Login' : 'Admin Login']];
+      }
+      if (state.sessions[state.role] === 'account') {
+        items = items.filter(([id]) => id !== `${state.role}-login`);
+      }
+
+      const renderedItems = items.map(([id, label]) => (
+        `<button class="${state.view === id ? 'active' : ''}" onclick="setView('${id}')">${label}</button>`
+      ));
+      if (state.sessions[state.role] === 'account') {
+        renderedItems.push(`<button onclick="logout('${state.role}')">Logout</button>`);
+      }
+      nav.innerHTML = renderedItems.join('');
+    }
+
+    function render() {
+      const sessionKey = state.sessions[state.role] === 'account' ? 'account' : state.sessions[state.role] === 'guest' ? 'guest' : 'none';
+      let [name, meta] = identity[state.role][sessionKey];
+      if (state.role === 'client' && sessionKey === 'account') {
+        const client = currentClient();
+        if (client) {
+          name = client.username;
+          meta = `Workbook UserID ${client.id}${client.phone ? ` · ${client.phone}` : ''}`;
+        }
+      }
+      if (state.role === 'provider' && sessionKey === 'account') {
+        const provider = currentProvider();
+        if (provider) {
+          name = provider.name;
+          meta = `Workbook ProviderID ${provider.id} · ${provider.status}`;
+        }
+      }
+      document.getElementById('identityName').textContent = name;
+      document.getElementById('identityMeta').textContent = meta;
+      renderNav();
+
+      document.querySelectorAll('.view').forEach(section => {
+        section.style.display = section.id === state.view ? 'block' : 'none';
+        section.innerHTML = '';
+      });
+
+      document.getElementById(state.view).innerHTML = renderers[state.view]();
+      updateSyncStatus();
+      renderShell();
+    }
+
+    function openModal(title, body) {
+      document.getElementById('modalTitle').textContent = title;
+      document.getElementById('modalBody').innerHTML = body;
+      document.getElementById('modal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('modal').classList.remove('open');
+    }
+
+    function openBookingModal(providerIdOrName = '') {
+      const isGuestClient = state.role === 'client' && state.sessions.client !== 'account';
+      const provider = state.providers.find(item => String(item.id) === String(providerIdOrName) || item.name === providerIdOrName) || state.providers.filter(item => item.status === 'ACTIVE')[0] || state.providers[0] || {};
+      const client = currentClient();
+      const defaultDate = todayDateValue();
+      const defaultDuration = firstServiceDuration(provider);
+      const defaultService = parseServiceDetails(provider?.services?.[0] || '');
+      const slots = availableSlotsFor(provider.id, defaultDate, defaultDuration, true, defaultService.buffer);
+      openModal('Book Appointment', html`
+        <div id="bookingScheduleStep" class="booking-step">
+          <label>Provider
+            <select id="bookingProvider" onchange="refreshBookingOptions()">
+              ${state.providers.filter(provider => provider.status === 'ACTIVE').map(item => `<option value="${item.id}" ${String(item.id) === String(provider.id) ? 'selected' : ''}>${item.name}</option>`).join('')}
+            </select>
+          </label>
+          <label>Service<select id="bookingService" onchange="refreshBookingTimes()">${renderServiceOptions(provider, { hideBuffer: true })}</select></label>
+          <label>Date<input id="bookingDate" type="date" value="${defaultDate}" onchange="refreshBookingTimes()"></label>
+          <div id="bookingDayPicker">${renderBookingDayPicker(provider.id, defaultDate, defaultService)}</div>
+          <label>Available time<select id="bookingTime">${renderSlotOptions(slots)}</select></label>
+          <p id="bookingAvailabilityMessage" class="muted small">${availabilityMessage(provider.id, defaultDate, slots)}</p>
+          <button class="btn" onclick="showBookingContactStep()">Next</button>
+        </div>
+        <div id="bookingContactStep" class="booking-step" style="display:none">
+          <label>Username or nickname<input id="bookingNickname" value="${state.sessions.client === 'account' ? (client?.username || '') : ''}"></label>
+          <label>Phone<input id="bookingPhone" value="${state.sessions.client === 'account' ? (client?.phone || '') : ''}"></label>
+          <textarea id="bookingNotes" placeholder="Optional request"></textarea>
+          <p class="muted small">Nickname and phone are only used for booking communication and SMS updates.</p>
+          <div class="btn-row">
+            <button class="btn secondary" onclick="showBookingScheduleStep()">Back</button>
+            <button class="btn" onclick="confirmPreviewBooking(${isGuestClient})">Confirm Booking</button>
+          </div>
+        </div>
+      `);
+    }
+
+    function renderBookingDayPicker(providerId, selectedDate, serviceDetails = null) {
+      const service = serviceDetails || selectedServiceDetails('bookingService');
+      const selected = new Date(`${selectedDate || todayDateValue()}T00:00:00`);
+      const start = new Date(selected);
+      start.setDate(selected.getDate() - selected.getDay());
+      const todayValue = todayDateValue();
+      const days = Array.from({ length: 14 }, (_, index) => {
+        const date = new Date(start);
+        date.setDate(start.getDate() + index);
+        const value = date.toISOString().slice(0, 10);
+        const isPast = value < todayValue;
+        const slots = isPast ? [] : availableSlotsFor(providerId, value, service.duration, true, service.buffer);
+        const classes = [
+          'booking-day',
+          slots.length ? 'available' : '',
+          value === selectedDate ? 'selected' : ''
+        ].filter(Boolean).join(' ');
+        return `<button class="${classes}" onclick="selectBookingDate('${value}')" type="button" ${isPast ? 'disabled' : ''}><span>${date.toLocaleDateString('en-US', { weekday: 'short' })}</span>${date.getDate()}</button>`;
+      }).join('');
+
+      return `<div class="booking-day-grid">${days}</div>`;
+    }
+
+    function selectBookingDate(dateValue) {
+      const dateInput = document.getElementById('bookingDate');
+      if (dateInput) dateInput.value = dateValue;
+      refreshBookingTimes();
+    }
+
+    function showBookingContactStep() {
+      const time = document.getElementById('bookingTime')?.value || '';
+      if (!time) {
+        const message = document.getElementById('bookingAvailabilityMessage');
+        if (message) message.textContent = 'Choose an available time before continuing.';
+        return;
+      }
+      document.getElementById('bookingScheduleStep').style.display = 'none';
+      document.getElementById('bookingContactStep').style.display = 'grid';
+    }
+
+    function showBookingScheduleStep() {
+      document.getElementById('bookingContactStep').style.display = 'none';
+      document.getElementById('bookingScheduleStep').style.display = 'grid';
+    }
+
+    function renderSlotOptions(slots) {
+      return slots.length
+        ? slots.map(slot => `<option>${slot}</option>`).join('')
+        : '<option value="">No available times</option>';
+    }
+
+    function renderOfflineSlotOptions(slots) {
+      return slots.length
+        ? slots.map(slot => `<option>${slot}</option>`).join('')
+        : '<option value="">No available times for this provider/date</option>';
+    }
+
+    function renderServiceOptions(provider, options = {}) {
+      const services = provider?.services?.length ? provider.services : [];
+      if (!services.length) {
+        return '<option value="">No services configured</option>';
+      }
+      return services.map(service => {
+        const details = parseServiceDetails(service);
+        const bufferMeta = !options.hideBuffer && details.buffer ? ` · ${details.buffer} min buffer` : '';
+        const meta = `${details.duration} min${details.price ? ` · ${details.price}` : ''}${bufferMeta}`;
+        return `<option value="${details.name}" data-duration="${details.duration}" data-price="${details.price}" data-buffer="${details.buffer}">${details.name} (${meta})</option>`;
+      }).join('');
+    }
+
+    function selectedServiceDetails(selectId) {
+      const select = document.getElementById(selectId);
+      const option = select?.selectedOptions?.[0];
+      return {
+        name: select?.value || option?.value || 'Service',
+        duration: Number(option?.dataset?.duration || 60),
+        price: option?.dataset?.price || '',
+        buffer: Number(option?.dataset?.buffer || 0)
+      };
+    }
+
+    function firstServiceDuration(provider) {
+      return provider?.services?.length ? parseServiceDetails(provider.services[0]).duration : 60;
+    }
+
+    function availabilityMessage(providerId, dateValue, slots) {
+      if (providerTimeOffForDate(providerId, dateValue).length) {
+        return 'This provider has blocked time away on that date.';
+      }
+      if (!availabilityForDate(providerId, dateValue).length) {
+        return 'No active availability is configured for that provider/date.';
+      }
+      return slots.length ? `${slots.length} available time${slots.length === 1 ? '' : 's'} based on provider availability and existing bookings.` : 'No available times for that provider/date.';
+    }
+
+    function refreshBookingTimes() {
+      const providerId = document.getElementById('bookingProvider')?.value || '';
+      const dateValue = document.getElementById('bookingDate')?.value || '';
+      const service = selectedServiceDetails('bookingService');
+      const slots = availableSlotsFor(providerId, dateValue, service.duration, true, service.buffer);
+      const timeSelect = document.getElementById('bookingTime');
+      if (timeSelect) {
+        timeSelect.innerHTML = renderSlotOptions(slots);
+      }
+      const message = document.getElementById('bookingAvailabilityMessage');
+      if (message) {
+        message.textContent = availabilityMessage(providerId, dateValue, slots);
+      }
+      const dayPicker = document.getElementById('bookingDayPicker');
+      if (dayPicker) {
+        dayPicker.innerHTML = renderBookingDayPicker(providerId, dateValue, service);
+      }
+    }
+
+    function refreshBookingOptions() {
+      const providerId = document.getElementById('bookingProvider')?.value || '';
+      const provider = state.providers.find(item => String(item.id) === String(providerId));
+      const serviceSelect = document.getElementById('bookingService');
+      if (serviceSelect) {
+        serviceSelect.innerHTML = renderServiceOptions(provider, { hideBuffer: true });
+      }
+      refreshBookingTimes();
+    }
+
+    function syncOfflineDurationFromService() {
+      const service = selectedServiceDetails('offlineService');
+      const durationSelect = document.getElementById('offlineDuration');
+      if (durationSelect && service.duration) {
+        const hasOption = Array.from(durationSelect.options).some(option => Number(option.value) === service.duration);
+        if (!hasOption) {
+          durationSelect.insertAdjacentHTML('beforeend', `<option value="${service.duration}">${service.duration} minutes</option>`);
+        }
+        durationSelect.value = String(service.duration);
+      }
+      refreshOfflineClientOptions();
+    }
+
+    function refreshOfflineClientOptions() {
+      const provider = currentProvider();
+      const dateValue = document.getElementById('offlineDate')?.value || '';
+      const duration = Number(document.getElementById('offlineDuration')?.value || 60);
+      const service = selectedServiceDetails('offlineService');
+      const override = document.getElementById('offlineOverrideAvailability')?.value === 'Yes';
+      const slots = provider ? availableSlotsFor(provider.id, dateValue, duration, false, service.buffer) : [];
+      const timeSelect = document.getElementById('offlineTime');
+      if (timeSelect) {
+        timeSelect.innerHTML = renderOfflineSlotOptions(slots);
+        timeSelect.disabled = override;
+      }
+      const message = document.getElementById('offlineAvailabilityMessage');
+      if (message) {
+        message.textContent = availabilityMessage(provider?.id, dateValue, slots);
+      }
+    }
+
+    function toggleOfflineOverride() {
+      const override = document.getElementById('offlineOverrideAvailability')?.value === 'Yes';
+      const manualWrap = document.getElementById('offlineManualTimeWrap');
+      const overrideMessage = document.getElementById('offlineOverrideMessage');
+      const timeSelect = document.getElementById('offlineTime');
+      if (manualWrap) manualWrap.style.display = override ? 'grid' : 'none';
+      if (overrideMessage) overrideMessage.style.display = override ? 'block' : 'none';
+      if (timeSelect) timeSelect.disabled = override;
+    }
+
+    function toggleOfflinePaymentFields() {
+      const status = document.getElementById('offlinePaymentStatus')?.value || 'Unpaid';
+      const fields = document.getElementById('offlinePaymentFields');
+      if (fields) {
+        fields.style.display = status === 'Paid' ? 'grid' : 'none';
+      }
+    }
+
+    async function confirmPreviewBooking(isGuestClient) {
+      const providerId = document.getElementById('bookingProvider')?.value || '';
+      const provider = state.providers.find(item => String(item.id) === String(providerId)) || currentProvider() || state.providers[0] || {};
+      const selectedTime = document.getElementById('bookingTime')?.value || '';
+      const service = selectedServiceDetails('bookingService');
+      const nickname = document.getElementById('bookingNickname')?.value?.trim() || '';
+      const phone = document.getElementById('bookingPhone')?.value?.trim() || '';
+      if (!service.name) {
+        toast('This provider has no services configured yet');
+        return;
+      }
+      if (!selectedTime) {
+        toast('Please choose an available time');
+        return;
+      }
+      if (!nickname || !phone) {
+        toast('Enter a nickname and phone for booking communication');
+        return;
+      }
+      const booking = {
+        id: `PREVIEW-${Date.now()}`,
+        providerId: provider.id || 1,
+        userId: state.sessions.client === 'account' ? state.currentClientId : '',
+        service: service.name,
+        date: document.getElementById('bookingDate')?.value || '2026-04-25',
+        time: selectedTime,
+        duration: service.duration,
+        nickname,
+        phone,
+        status: 'Confirmed',
+        notes: document.getElementById('bookingNotes')?.value || `Preview booking with ${provider.name}`,
+        createdAt: new Date().toISOString(),
+        source: state.backend.source === 'apps-script' ? 'Online' : 'Local Preview',
+        kind: 'online'
+      };
+
+      try {
+        const result = await saveBooking(booking);
+        if (isGuestClient) {
+          openPostBookingAccountPrompt(result.localOnly);
+          return;
+        }
+        toast(result.localOnly ? 'Booking saved locally and queued for workbook retry' : 'Booking saved to Google workbook and confirmed by SMS');
+      } catch (error) {
+        toast(`Booking could not be saved: ${error.message}`);
+      }
+    }
+
+    function openPostBookingAccountPrompt(localOnly = false) {
+      openModal('Booking Confirmed', html`
+        <div class="item">
+          <div class="item-head">
+            <strong>Your appointment is confirmed by SMS.</strong>
+            <span class="status confirmed-status">CONFIRMED</span>
+          </div>
+          <p class="muted">You booked as a guest. Creating an account is optional, but it saves your booking history, favorite providers, private notes, cancellation tools, and SMS preferences.</p>
+          ${localOnly ? '<p class="muted small">This booking is saved locally and will retry automatically when the workbook is reachable.</p>' : '<p class="muted small">Saved through Apps Script using the createBooking action.</p>'}
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn" onclick="loginAs('client'); closeModal()">Create Account From This Booking</button>
+          <button class="btn secondary" onclick="closeModal()">Stay as Guest</button>
+        </div>
+      `);
+    }
+
+    function openSmsModal() {
+      openModal('SMS Communication Preview', html`
+        <div class="list">
+          <div class="item"><strong>Login PIN</strong><br><span class="muted">Your RedSmart login PIN is 345821. It expires in 10 minutes.</span></div>
+          <div class="item"><strong>Booking confirmation</strong><br><span class="muted">Confirmed: Swedish Massage, April 25 at 2:00 PM. Reply CANCEL to cancel.</span></div>
+          <div class="item"><strong>Reschedule notice</strong><br><span class="muted">Your provider has a schedule change. Reply 1 for 3:30 PM or 2 for another provider.</span></div>
+        </div>
+      `);
+    }
+
+    function openSmsPinModal(role) {
+      const expectedPin = role === 'client' ? state.clientPins[state.currentClientId] : '';
+      openModal('SMS PIN Verification', html`
+        <p class="muted" style="margin-top:0">${expectedPin ? 'Enter the preview PIN you set for this account.' : 'A 6-digit code was sent to the phone number on file. This preview uses a demo code.'}</p>
+        <label>Enter SMS PIN<input id="smsPinInput" value="${expectedPin ? '' : '345821'}"></label>
+        <button class="btn" style="margin-top:14px" onclick="verifySmsPin('${role}')">Verify and Continue</button>
+      `);
+    }
+
+    function verifySmsPin(role) {
+      const entered = document.getElementById('smsPinInput')?.value?.trim() || '';
+      const expected = role === 'client' ? state.clientPins[state.currentClientId] : '';
+      if (expected && entered !== expected) {
+        toast('Incorrect PIN');
+        return;
+      }
+      if (!expected && entered !== '345821') {
+        toast('Incorrect demo code');
+        return;
+      }
+      loginAs(role);
+      closeModal();
+    }
+
+    function openProviderApplyModal() {
+      openModal('Provider Application', html`
+        <div class="form-grid">
+          <label>Business name<input id="applyBusinessName" value=""></label>
+          <label>Owner name<input id="applyOwnerName" value=""></label>
+          <label>Business phone<input id="applyPhone" value=""></label>
+          <label>Email<input id="applyEmail" value=""></label>
+          <label>Subscription tier
+            <select id="applySubscription">
+              <option value="Starter">Starter - $19.99/mo</option>
+              <option value="Professional" selected>Professional - $29.99/mo</option>
+              <option value="Scale">Scale - $49.99/mo</option>
+            </select>
+          </label>
+          <label>Provider PIN<input id="applyProviderPin" type="password" value=""></label>
+        </div>
+        <div class="grid three" style="margin-top:14px">
+          <div class="item"><strong>Starter</strong><br><span class="muted">Listing, booking, basic availability, offline bookings.</span></div>
+          <div class="item"><strong>Professional</strong><br><span class="muted">Multiple availability ranges, payment/tip logs, reviews, advanced scheduling.</span></div>
+          <div class="item"><strong>Scale</strong><br><span class="muted">Multi-staff expansion, reporting, priority support, advanced operations.</span></div>
+        </div>
+        <textarea id="applyServices" style="margin-top:14px" placeholder="Tell RedSmart about your wellness services"></textarea>
+        <button class="btn" style="margin-top:14px" onclick="submitProviderApplication()">Submit Application</button>
+      `);
+    }
+
+    function openCreateClientAccount() {
+      openModal('Create Privacy-First Account', html`
+        <div class="form-grid">
+          <label>Username<input id="newClientUsername" value=""></label>
+          <label>Phone<input id="newClientPhone" value=""></label>
+          <label>Preview PIN<input id="newClientPin" type="password" value=""></label>
+        </div>
+        <p class="muted small">No legal name or email required. This creates a USERS row when Apps Script is connected.</p>
+        <button class="btn" style="margin-top:14px" onclick="createClientAccount()">Create Account</button>
+      `);
+    }
+
+    async function createClientAccount() {
+      const username = document.getElementById('newClientUsername')?.value || '';
+      const phone = document.getElementById('newClientPhone')?.value || '';
+      const pin = document.getElementById('newClientPin')?.value || '';
+      if (!username.trim()) return toast('Enter a username');
+      if (usernameExists(username)) return toast('That username already exists');
+      if (!pin.trim()) return toast('Enter a PIN');
+      const user = {
+        id: `LOCAL-USER-${Date.now()}`,
+        username,
+        phone,
+        userType: 'Client',
+        smsVerified: true
+      };
+
+      try {
+        const write = await saveAppsScriptWrite('createUser', {
+          username,
+          phone,
+          userType: 'Client',
+          smsVerified: true
+        });
+        if (write.synced) {
+          const result = write.result || {};
+          user.id = result.userId || user.id;
+        }
+        state.clientPins[user.id] = pin;
+        saveLocalObject(CLIENT_PINS_KEY, state.clientPins);
+        state.users.push(user);
+        state.currentClientId = user.id;
+        state.role = 'client';
+        state.sessions.client = 'account';
+        state.view = 'client-dashboard';
+        render();
+        toast(write.queued ? `Created account for ${username} locally and queued workbook save` : `Created account for ${username}`);
+      } catch (error) {
+        toast(`Client account could not be created: ${error.message}`);
+      }
+    }
+
+    async function submitProviderApplication() {
+      const businessName = document.getElementById('applyBusinessName')?.value?.trim() || '';
+      if (!businessName) return toast('Enter a business name');
+      const provider = {
+        id: `LOCAL-PROVIDER-${Date.now()}`,
+        name: businessName,
+        owner: document.getElementById('applyOwnerName')?.value || '',
+        status: 'PENDING',
+        rating: 0,
+        reviews: 0,
+        services: parseServices(document.getElementById('applyServices')?.value || ''),
+        subscription: document.getElementById('applySubscription')?.value || 'Starter',
+        phone: document.getElementById('applyPhone')?.value || ''
+      };
+
+      try {
+        const write = await saveAppsScriptWrite('createProvider', {
+          businessName: provider.name,
+          ownerName: provider.owner,
+          email: document.getElementById('applyEmail')?.value || '',
+          phone: document.getElementById('applyPhone')?.value || '',
+          bufferTime: 15,
+          subscriptionPlan: provider.subscription
+        });
+        if (write.synced) {
+          const result = write.result || {};
+          provider.id = result.providerId || provider.id;
+        }
+        state.providers.push(provider);
+        const pin = document.getElementById('applyProviderPin')?.value?.trim() || '';
+        if (pin) {
+          state.providerPins[provider.id] = pin;
+          saveLocalObject(PROVIDER_PINS_KEY, state.providerPins);
+        }
+        state.role = 'admin';
+        state.sessions.admin = 'account';
+        state.view = 'admin-providers';
+        render();
+        toast(write.queued ? 'Provider application saved locally and queued for workbook retry' : 'Provider application submitted as PENDING');
+      } catch (error) {
+        toast(`Provider application could not be submitted: ${error.message}`);
+      }
+    }
+
+    function openProviderDetails(providerId) {
+      const provider = findProvider(providerId);
+      if (!provider) {
+        toast('Provider not found');
+        return;
+      }
+      openModal('Provider Details', html`
+        <div class="grid two">
+          <div class="item"><strong>${provider.name}</strong><br><span class="muted">Owner: ${provider.owner || 'Not listed'}</span></div>
+          <div class="item"><strong>Status</strong><br><span class="muted">${provider.status} · ${provider.subscription}</span></div>
+          <div class="item"><strong>Rating</strong><br><span class="muted">${provider.rating || 'New'} stars · ${provider.reviews || 0} reviews</span></div>
+          <div class="item"><strong>Services</strong><br><span class="muted">${provider.services.join(', ')}</span></div>
+        </div>
+      `);
+    }
+
+    async function addProviderService(providerId) {
+      const provider = findProvider(providerId);
+      if (!provider) return toast('Provider not found');
+      const serviceName = document.getElementById('serviceName')?.value || '';
+      if (!serviceName.trim()) return toast('Enter a service name');
+      const label = serviceToLabel({
+        name: serviceName.trim(),
+        duration: Number(document.getElementById('serviceDuration')?.value || 60),
+        price: document.getElementById('servicePrice')?.value || '$0',
+        buffer: Number(document.getElementById('serviceBuffer')?.value || 0)
+      });
+      try {
+        await saveProviderServices(providerId, [...provider.services, label]);
+        render();
+        toast('Service added to provider profile');
+      } catch (error) {
+        toast(`Service could not be saved: ${error.message}`);
+      }
+    }
+
+    async function saveProviderServiceDetails(providerId, index) {
+      const provider = findProvider(providerId);
+      if (!provider) return toast('Provider not found');
+      const serviceName = document.getElementById(`service-name-${index}`)?.value || '';
+      if (!serviceName.trim()) return toast('Enter a service name');
+      const nextServices = provider.services.map((service, serviceIndex) => {
+        if (serviceIndex !== index) return service;
+        return serviceToLabel({
+          name: serviceName.trim(),
+          duration: Number(document.getElementById(`service-duration-${index}`)?.value || 60),
+          price: document.getElementById(`service-price-${index}`)?.value || '',
+          buffer: Number(document.getElementById(`service-buffer-${index}`)?.value || 0)
+        });
+      });
+
+      try {
+        await saveProviderServices(providerId, nextServices);
+        render();
+        toast('Service details saved');
+      } catch (error) {
+        toast(`Service could not be saved: ${error.message}`);
+      }
+    }
+
+    async function removeProviderService(providerId, index) {
+      const provider = findProvider(providerId);
+      if (!provider) return toast('Provider not found');
+      const nextServices = provider.services.filter((_, serviceIndex) => serviceIndex !== index);
+      try {
+        await saveProviderServices(providerId, nextServices);
+        render();
+        toast('Service removed from provider profile');
+      } catch (error) {
+        toast(`Service could not be removed: ${error.message}`);
+      }
+    }
+
+    function toggleFavoriteProvider(providerId) {
+      const id = String(providerId);
+      state.favorites = state.favorites.includes(id)
+        ? state.favorites.filter(item => item !== id)
+        : [...state.favorites, id];
+      render();
+      toast(state.favorites.includes(id) ? 'Provider saved to favorites' : 'Provider removed from favorites');
+    }
+
+    function openAppointmentDetail(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+      const defaultAmount = defaultPaymentAmountForBooking(booking);
+
+      openModal('Appointment Details', html`
+        <div class="grid two">
+          <div class="item">
+            <strong>${booking.service}</strong><br>
+            <span class="muted">${formatDisplayDate(booking.date)} at ${formatDisplayTime(booking.time)}</span>
+          </div>
+          <div class="item">
+            <strong>${booking.nickname || 'Client'}</strong><br>
+            <span class="muted">${booking.phone || 'Phone not listed'}</span>
+          </div>
+          <div class="item">
+            <strong>Status</strong><br>
+            <span class="muted">${booking.status || 'Confirmed'} · ${booking.paid ? 'Paid' : 'Unpaid'} · ${booking.source || kind}</span>
+          </div>
+          <div class="item">
+            <strong>Payment</strong><br>
+            <span class="muted">${formatCurrency(defaultAmount)}${booking.method ? ` via ${booking.method}` : ''}${booking.tip ? ` · tip ${formatCurrency(booking.tip)}` : ''}</span>
+          </div>
+        </div>
+        <div class="card" style="margin-top:14px;box-shadow:none">
+          <h3>Enter Payment</h3>
+          <div class="form-grid">
+            <label>Service payment<input id="detailPaymentAmount" type="number" min="0" step="1" value="${defaultAmount}"></label>
+            <label>Tip<input id="detailPaymentTip" type="number" min="0" step="1" value="${Number(booking.tip || 0)}"></label>
+            <label>Payment method
+              <select id="detailPaymentMethod">
+                ${['Cash', 'Zelle', 'Venmo', 'PayPal', 'Apple Pay', 'Other'].map(method => `<option ${String(booking.method || 'Cash') === method ? 'selected' : ''}>${method}</option>`).join('')}
+              </select>
+            </label>
+            <label>Payment status
+              <select id="detailPaymentStatus">
+                ${['Paid', 'Unpaid'].map(status => `<option ${booking.paid === (status === 'Paid') ? 'selected' : ''}>${status}</option>`).join('')}
+              </select>
+            </label>
+          </div>
+          <button class="btn good" style="margin-top:14px" onclick="saveAppointmentPayment('${kind}', '${id}')">Save Payment</button>
+        </div>
+        <div class="item" style="margin-top:14px">
+          <strong>Notes</strong><br>
+          <span class="muted">${booking.providerNotes || booking.notes || 'No notes yet.'}</span>
+        </div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn good" onclick="markAppointmentPaid('${kind}', '${id}')">Mark Paid</button>
+          <button class="btn secondary" onclick="openAppointmentNotes('${kind}', '${id}')">Log Notes</button>
+          <button class="btn warn" onclick="updateAppointmentStatus('${kind}', '${id}', 'Completed')">Mark Complete</button>
+          <button class="btn warn" onclick="cancelAppointment('${kind}', '${id}')">Cancel</button>
+          <button class="btn secondary" onclick="deleteAppointment('${kind}', '${id}')">Delete</button>
+        </div>
+      `);
+    }
+
+    function openAppointmentNotes(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Appointment not found');
+        return;
+      }
+
+      openModal('Log Provider Notes', html`
+        <p class="muted" style="margin-top:0">${booking.service} for ${booking.nickname || 'Client'} on ${formatDisplayDate(booking.date)}.</p>
+        <textarea id="appointmentNoteText" placeholder="Provider notes">${booking.providerNotes || booking.notes || ''}</textarea>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn" onclick="saveAppointmentNotes('${kind}', '${id}')">Save Notes</button>
+          <button class="btn secondary" onclick="closeModal()">Cancel</button>
+        </div>
+        <p class="muted small">Current Apps Script persists booking status and payments. Provider notes update this preview immediately; to persist them after refresh, add a provider-notes field/action to the backend.</p>
+      `);
+    }
+
+    function saveAppointmentNotes(kind, id) {
+      const note = document.getElementById('appointmentNoteText')?.value || '';
+      updateAppointmentLocal(kind, id, { providerNotes: note });
+      render();
+      openModal('Notes Saved', html`
+        <p>Provider notes were added to this appointment in the dashboard preview.</p>
+        <p class="muted small">Persisting these notes after refresh needs a backend update because the current Apps Script only updates booking status.</p>
+        <button class="btn" onclick="closeModal()">Done</button>
+      `);
+    }
+
+    function requestDataDeletion() {
+      const request = {
+        id: Date.now(),
+        username: 'Sunseeker',
+        requestedAt: new Date().toISOString()
+      };
+      state.deletedDataRequests.push(request);
+      openModal('Data Deletion Requested', html`
+        <p>Your deletion request was recorded in this preview.</p>
+        <p class="muted small">Production flow should verify the client by SMS before deleting booking history.</p>
+        <button class="btn" onclick="closeModal()">Done</button>
+      `);
+    }
+
+    function openClientReview(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Booking not found');
+        return;
+      }
+
+      openModal('Review Provider', html`
+        <p class="muted" style="margin-top:0">${booking.service} with ${providerNameForBooking(booking)} on ${formatDisplayDate(booking.date)}.</p>
+        <div class="form-grid">
+          <label>Rating
+            <select id="clientReviewStars">
+              <option value="5">5 stars</option>
+              <option value="4">4 stars</option>
+              <option value="3">3 stars</option>
+              <option value="2">2 stars</option>
+              <option value="1">1 star</option>
+            </select>
+          </label>
+          <label>Would return?
+            <select id="clientWouldReturn">
+              <option>Yes</option>
+              <option>No</option>
+              <option>Not sure</option>
+            </select>
+          </label>
+        </div>
+        <textarea id="clientReviewText" style="margin-top:14px" placeholder="Share feedback for this provider"></textarea>
+        <button class="btn" style="margin-top:14px" onclick="saveClientReview('${kind}', '${id}')">Submit Review</button>
+      `);
+    }
+
+    async function saveClientReview(kind, id) {
+      const booking = findAppointment(kind, id);
+      if (!booking) {
+        toast('Booking not found');
+        return;
+      }
+
+      const rating = {
+        RatingID: `LOCAL-RATING-${Date.now()}`,
+        ProviderID: booking.providerId,
+        ClientID: state.currentClientId || booking.userId || '',
+        BookingID: kind === 'offline' ? '' : booking.id,
+        StarRating: Number(document.getElementById('clientReviewStars')?.value || 5),
+        ReviewText: document.getElementById('clientReviewText')?.value || '',
+        WouldReturn: document.getElementById('clientWouldReturn')?.value || 'Yes',
+        CreatedDate: new Date().toISOString().slice(0, 10)
+      };
+
+      try {
+        const write = await saveAppsScriptWrite('createRating', {
+          providerId: rating.ProviderID,
+          clientId: rating.ClientID,
+          bookingId: rating.BookingID,
+          starRating: rating.StarRating,
+          reviewText: rating.ReviewText,
+          wouldReturn: rating.WouldReturn
+        });
+        if (write.synced) {
+          const result = write.result || {};
+          rating.RatingID = result.ratingId || rating.RatingID;
+        }
+
+        state.ratings.push(rating);
+        closeModal();
+        render();
+        toast(write.queued ? 'Review saved locally and queued for workbook retry' : 'Review submitted to provider');
+      } catch (error) {
+        toast(`Review could not be saved: ${error.message}`);
+      }
+    }
+
+    function openCalendarSummary() {
+      const groups = groupBookingsByDate(filteredProviderAppointments());
+      openModal('Calendar Summary', html`
+        <div class="list">
+          ${Object.keys(groups).slice(0, 10).map(date => html`
+            <div class="item">
+              <strong>${formatDisplayDate(date)}</strong><br>
+              <span class="muted">${groups[date].length} appointment${groups[date].length === 1 ? '' : 's'} scheduled</span>
+            </div>
+          `).join('') || '<div class="item">No appointments scheduled.</div>'}
+        </div>
+      `);
+    }
+
+    function openScheduleFilters() {
+      const serviceOptions = ['All', ...new Set(providerAppointments().map(booking => booking.service).filter(Boolean))];
+      openModal('Schedule Filters', html`
+        <div class="form-grid">
+          <label>Source<select id="filterSource">${['All', 'Online', 'Phone', 'Text', 'Walk-in', 'Manual', 'Local Preview'].map(value => `<option ${state.scheduleFilters.source === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>
+          <label>Status<select id="filterStatus">${['All', 'Confirmed', 'Completed', 'Cancelled'].map(value => `<option ${state.scheduleFilters.status === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>
+          <label>Payment<select id="filterPayment">${['All', 'Paid', 'Unpaid'].map(value => `<option ${state.scheduleFilters.payment === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>
+          <label>Service<select id="filterService">${serviceOptions.map(value => `<option ${state.scheduleFilters.service === value ? 'selected' : ''}>${value}</option>`).join('')}</select></label>
+          <label>Month<input id="filterMonth" type="month" value="${state.scheduleFilters.month || ''}"></label>
+          <label>Start date<input id="filterStartDate" type="date" value="${state.scheduleFilters.startDate || ''}"></label>
+          <label>End date<input id="filterEndDate" type="date" value="${state.scheduleFilters.endDate || ''}"></label>
+        </div>
+        <p class="muted small">Use Month for a monthly dashboard, or Start/End for a custom range. A custom range takes priority when entered.</p>
+        <button class="btn" style="margin-top:14px" onclick="applyScheduleFilters()">Apply Filters</button>
+      `);
+    }
+
+    function applyScheduleFilters() {
+      state.scheduleFilters = {
+        source: document.getElementById('filterSource')?.value || 'All',
+        status: document.getElementById('filterStatus')?.value || 'All',
+        payment: document.getElementById('filterPayment')?.value || 'All',
+        service: document.getElementById('filterService')?.value || 'All',
+        month: document.getElementById('filterMonth')?.value || '',
+        startDate: document.getElementById('filterStartDate')?.value || '',
+        endDate: document.getElementById('filterEndDate')?.value || ''
+      };
+      closeModal();
+      render();
+    }
+
+    function clearScheduleFilters() {
+      state.scheduleFilters = {
+        source: 'All',
+        status: 'All',
+        payment: 'All',
+        service: 'All',
+        month: '',
+        startDate: '',
+        endDate: ''
+      };
+      render();
+    }
+
+    async function createTimeOffBlock() {
+      try {
+        await saveAppsScriptWrite('createTimeOff', {
+          providerId: currentProvider()?.id || state.providers[0]?.id || 1,
+          blockType: 'Vacation',
+          startDate: '2026-05-05',
+          endDate: '2026-05-12',
+          recurringPattern: '',
+          description: 'Family vacation. Notify affected clients by SMS.'
+        });
+        state.timeOff.push({
+          ProviderID: currentProvider()?.id || state.providers[0]?.id || 1,
+          BlockType: 'Vacation',
+          StartDate: '2026-05-05',
+          EndDate: '2026-05-12'
+        });
+        toast('Time block created and SMS notifications queued');
+      } catch (error) {
+        toast(`Time block could not be created: ${error.message}`);
+      }
+    }
+
+    async function saveProviderAvailability() {
+      const provider = currentProvider();
+      if (!provider) {
+        toast('No provider selected');
+        return;
+      }
+
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      const targetEffectiveStart = document.getElementById('availabilityEffectiveStart')?.value || new Date().toISOString().slice(0, 10);
+      const existingRows = providerAvailabilityForVersion(provider.id, targetEffectiveStart);
+      const targetRowIds = new Set(existingRows.map(row => String(row.id)));
+      const rowsToDelete = [];
+      const rowsToSave = [];
+
+      days.forEach(day => {
+        const key = day.toLowerCase();
+        const isActive = Boolean(document.getElementById(`avail-active-${key}`)?.checked);
+        const dayExistingRows = existingRows.filter(row => row.dayOfWeek === day);
+        const rangeBlocks = Array.from(document.querySelectorAll(`#avail-ranges-${key} [data-range-block="true"]`));
+
+        if (!isActive) {
+          rowsToSave.push({
+            id: dayExistingRows[0]?.id || '',
+            providerId: provider.id,
+            dayOfWeek: day,
+            startTime: 'Closed',
+            endTime: 'Closed',
+            slotIntervalMinutes: 30,
+            bufferMinutes: 0,
+            isActive: false,
+            effectiveStartDate: targetEffectiveStart,
+            effectiveEndDate: '',
+            notes: 'Closed'
+          });
+          rowsToDelete.push(...dayExistingRows.slice(1));
+          return;
+        }
+
+        rangeBlocks.forEach((block, index) => {
+          const rawId = block.querySelector('[data-field="id"]')?.value || '';
+          const id = targetRowIds.has(String(rawId)) ? rawId : '';
+          const startInput = block.querySelector('[data-field="startTime"]');
+          const endInput = block.querySelector('[data-field="endTime"]');
+          const startTime = normalizeTimeInput(startInput?.value || '09:00 AM');
+          const endTime = normalizeTimeInput(endInput?.value || '05:00 PM');
+          if (startInput) startInput.value = startTime;
+          if (endInput) endInput.value = endTime;
+
+          rowsToSave.push({
+            id,
+            providerId: provider.id,
+            dayOfWeek: day,
+            startTime,
+            endTime,
+            slotIntervalMinutes: Number(block.querySelector('[data-field="slotIntervalMinutes"]')?.value || 30),
+            bufferMinutes: 0,
+            isActive: true,
+            effectiveStartDate: targetEffectiveStart,
+            effectiveEndDate: '',
+            notes: rangeBlocks.length > 1 ? `Provider weekly availability range ${index + 1}` : 'Provider weekly availability'
+          });
+        });
+
+        const keptIds = new Set(rowsToSave.filter(row => row.dayOfWeek === day && row.id).map(row => String(row.id)));
+        rowsToDelete.push(...dayExistingRows.filter(row => row.id && !keptIds.has(String(row.id))));
+      });
+
+      try {
+        const savedRows = [];
+        for (const row of rowsToDelete) {
+          if (row.id) {
+            await saveAppsScriptWrite('deleteAvailability', { availabilityId: row.id });
+          }
+        }
+
+        for (const row of rowsToSave) {
+          if (row.id) {
+            await saveAppsScriptWrite('updateAvailability', {
+              availabilityId: row.id,
+              providerId: row.providerId,
+              dayOfWeek: row.dayOfWeek,
+              startTime: row.startTime,
+              endTime: row.endTime,
+              slotIntervalMinutes: row.slotIntervalMinutes,
+              bufferMinutes: row.bufferMinutes,
+              isActive: row.isActive,
+              effectiveStartDate: row.effectiveStartDate,
+              effectiveEndDate: row.effectiveEndDate,
+              notes: row.notes
+            });
+            savedRows.push(row);
+          } else {
+            const write = await saveAppsScriptWrite('createAvailability', {
+              providerId: row.providerId,
+              dayOfWeek: row.dayOfWeek,
+              startTime: row.startTime,
+              endTime: row.endTime,
+              slotIntervalMinutes: row.slotIntervalMinutes,
+              bufferMinutes: row.bufferMinutes,
+              isActive: row.isActive,
+              effectiveStartDate: row.effectiveStartDate,
+              effectiveEndDate: row.effectiveEndDate,
+              notes: row.notes
+            });
+            const result = write.result || {};
+            savedRows.push({ ...row, id: result.availabilityId || row.id || `LOCAL-AVAIL-${targetEffectiveStart}-${row.dayOfWeek}-${savedRows.length + 1}` });
+          }
+        }
+
+        const otherRows = state.availability.filter(row =>
+          String(row.providerId) !== String(provider.id) ||
+          availabilityEffectiveStart(row) !== targetEffectiveStart
+        );
+        state.availability = [...otherRows, ...savedRows];
+        render();
+        toast(`Provider availability saved starting ${formatDisplayDate(targetEffectiveStart)}`);
+      } catch (error) {
+        toast(`Availability could not be saved: ${error.message}`);
+      }
+    }
+
+    function openReviewReply() {
+      openModal('Reply to Review', html`
+        <p class="muted" style="margin-top:0">Reply to the recent 4-star review requesting more evening slots.</p>
+        <textarea id="reviewReplyText">Thank you for the feedback. I added more evening availability for next week.</textarea>
+        <button class="btn" style="margin-top:14px" onclick="saveReviewReply()">Save Reply</button>
+      `);
+    }
+
+    function saveReviewReply() {
+      state.reviewReplies.push({
+        id: Date.now(),
+        text: document.getElementById('reviewReplyText')?.value || '',
+        createdAt: new Date().toISOString()
+      });
+      openModal('Review Reply Saved', html`
+        <p>The provider reply was saved in this preview.</p>
+        <p class="muted small">Persisting review replies would need a review-reply action or column in the backend.</p>
+        <button class="btn" onclick="closeModal()">Done</button>
+      `);
+    }
+
+    async function saveOfflineBookingFromForm() {
+      const paymentStatus = document.getElementById('offlinePaymentStatus')?.value || 'Unpaid';
+      const paid = paymentStatus === 'Paid';
+      const service = selectedServiceDetails('offlineService');
+      const overrideAvailability = document.getElementById('offlineOverrideAvailability')?.value === 'Yes';
+      if (!service.name) {
+        toast('Add at least one provider service before saving an offline booking');
+        return;
+      }
+      const selectedTime = overrideAvailability
+        ? toDisplayTime(document.getElementById('offlineManualTime')?.value || '')
+        : (document.getElementById('offlineTime')?.value || '');
+      const booking = {
+        id: `OFFLINE-PREVIEW-${Date.now()}`,
+        providerId: currentProvider()?.id || state.providers[0]?.id || 1,
+        nickname: document.getElementById('offlineClientName')?.value || 'Offline Client',
+        phone: document.getElementById('offlineClientPhone')?.value || '',
+        service: service.name,
+        source: document.getElementById('offlineSource')?.value || 'Phone',
+        date: document.getElementById('offlineDate')?.value || new Date().toISOString().slice(0, 10),
+        time: selectedTime,
+        duration: Number(document.getElementById('offlineDuration')?.value || service.duration || 60),
+        amount: paid ? Number(document.getElementById('offlinePayment')?.value || 0) : 0,
+        tip: paid ? Number(document.getElementById('offlineTip')?.value || 0) : 0,
+        method: paid ? (document.getElementById('offlineMethod')?.value || 'Cash') : '',
+        notes: document.getElementById('offlineNotes')?.value || (overrideAvailability ? 'Offline booking with availability override' : 'Offline booking'),
+        status: 'Confirmed',
+        paid,
+        overrideAvailability
+      };
+
+      if (!booking.time) {
+        toast(overrideAvailability ? 'Enter a manual time' : 'Choose an available time so this offline booking can block availability');
+        return;
+      }
+
+      try {
+        const result = await saveOfflineBooking(booking);
+        state.view = 'provider-dashboard';
+        render();
+        openModal('Offline Booking Saved', html`
+          <div class="item">
+            <strong>${booking.nickname} was added.</strong><br>
+            <span class="muted">${booking.service} on ${formatDisplayDate(booking.date)}${booking.time ? ` at ${formatDisplayTime(booking.time)}` : ''}. ${result.localOnly ? 'Saved locally and queued for workbook retry.' : 'Saved through Apps Script createOfflineBooking.'}</span>
+          </div>
+          <button class="btn" style="margin-top:14px" onclick="closeModal()">View Dashboard</button>
+        `);
+      } catch (error) {
+        toast(`Offline booking could not be saved: ${error.message}`);
+      }
+    }
+
+    function openConflictModal() {
+      openModal('Schedule Conflict Resolution', html`
+        <p class="muted" style="margin-top:0">Blocking May 5-12 creates 3 conflicts. Choose how to resolve each booking.</p>
+        <div class="list">
+          <div class="item"><strong>Alex, May 5, 10:00 AM</strong><br><label><select><option>Reschedule with same provider</option><option>Move to another provider</option><option>Keep as exception</option><option>Cancel and notify</option></select></label></div>
+          <div class="item"><strong>Jordan, May 7, 1:00 PM</strong><br><label><select><option>Move to another provider</option><option>Reschedule with same provider</option><option>Keep as exception</option><option>Cancel and notify</option></select></label></div>
+          <div class="item"><strong>Casey, May 10, 3:30 PM</strong><br><label><select><option>Keep as exception</option><option>Reschedule with same provider</option><option>Move to another provider</option><option>Cancel and notify</option></select></label></div>
+        </div>
+        <button class="btn" style="margin-top:14px" onclick="createTimeOffBlock(); closeModal()">Confirm Resolutions</button>
+      `);
+    }
+
+    function toast(message) {
+      openModal('Action Preview', `<p>${message}.</p><button class="btn" onclick="closeModal()">Done</button>`);
+    }
+
+    document.querySelectorAll('.role-switcher button, .mobile-role-switcher button').forEach(button => {
+      button.addEventListener('click', () => setRole(button.dataset.role));
+    });
+
+    window.addEventListener('resize', () => {
+      renderShell();
+    });
+
+    window.addEventListener('online', () => {
+      loadGoogleWorkbook();
+    });
+
+    setInterval(() => {
+      if (state.pendingWrites.length) {
+        loadGoogleWorkbook();
+      }
+    }, 60000);
+
+    render();
+    loadGoogleWorkbook();
+  </script>
+</body>
+</html>

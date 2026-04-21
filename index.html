@@ -3632,14 +3632,18 @@
       const defaultDate = todayDateValue();
       const defaultDuration = firstServiceDuration(provider);
       const defaultService = parseServiceDetails(provider?.services?.[0] || '');
+      const activeProviders = state.providers.filter(provider => provider.status === 'ACTIVE');
+      const showProviderSelect = activeProviders.length > 1;
       const slots = availableSlotsFor(provider.id, defaultDate, defaultDuration, true, defaultService.buffer);
       openModal('Book Appointment', html`
         <div id="bookingScheduleStep" class="booking-step">
-          <label>Provider
-            <select id="bookingProvider" onchange="refreshBookingOptions()">
-              ${state.providers.filter(provider => provider.status === 'ACTIVE').map(item => `<option value="${item.id}" ${String(item.id) === String(provider.id) ? 'selected' : ''}>${item.name}</option>`).join('')}
-            </select>
-          </label>
+          ${showProviderSelect ? html`
+            <label>Provider
+              <select id="bookingProvider" onchange="refreshBookingOptions()">
+                ${activeProviders.map(item => `<option value="${item.id}" ${String(item.id) === String(provider.id) ? 'selected' : ''}>${item.name}</option>`).join('')}
+              </select>
+            </label>
+          ` : `<input id="bookingProvider" type="hidden" value="${provider.id || ''}">`}
           <label>Service<select id="bookingService" onchange="refreshBookingTimes()">${renderServiceOptions(provider, { hideBuffer: true })}</select></label>
           <div>
             <strong>Date</strong>

@@ -1214,6 +1214,55 @@
       return 'Trial or unassigned plan. Billing starts after approval.';
     }
 
+    const PLAN_FEATURES = {
+      Starter: {
+        maxRangesPerDay: 1,
+        paymentLogs: false,
+        reports: false,
+        multiStaff: false
+      },
+      Professional: {
+        maxRangesPerDay: 99,
+        paymentLogs: true,
+        reports: false,
+        multiStaff: false
+      },
+      Scale: {
+        maxRangesPerDay: 99,
+        paymentLogs: true,
+        reports: true,
+        multiStaff: true
+      }
+    };
+
+    function normalizedPlanName(plan) {
+      const key = String(plan || '').toLowerCase();
+      if (key.includes('scale') || key.includes('premium')) return 'Scale';
+      if (key.includes('professional') || key.includes('growth')) return 'Professional';
+      return 'Starter';
+    }
+
+    function providerPlan(provider = currentProvider()) {
+      return normalizedPlanName(provider?.subscription || provider?.SubscriptionPlan || provider?.Plan);
+    }
+
+    function planFeatures(provider = currentProvider()) {
+      return PLAN_FEATURES[providerPlan(provider)] || PLAN_FEATURES.Starter;
+    }
+
+    function hasPlanFeature(feature, provider = currentProvider()) {
+      return Boolean(planFeatures(provider)[feature]);
+    }
+
+    function planUpgradeNotice(featureLabel, requiredPlan = 'Professional') {
+      return html`
+        <div class="item" style="border-left:4px solid var(--red)">
+          <strong>${featureLabel} requires ${requiredPlan} or Scale.</strong><br>
+          <span class="muted">Ask the admin to update this provider subscription before using this tool.</span>
+        </div>
+      `;
+    }
+
     function pageHead(title, description, pill) {
       return html`
         <div class="page-head">
@@ -2261,6 +2310,7 @@
     }
 
     function renderProviderAgenda(bookings, limitDays = 7) {
+      const paymentToolsEnabled = hasPlanFeature('paymentLogs');
       const groups = groupBookingsByDate(bookings);
       const dateKeys = Object.keys(groups).slice(0, limitDays);
 
@@ -2288,7 +2338,7 @@
                 <div class="appointment-actions">
                   <span class="status ${booking.paid ? 'active-status' : 'pending-status'}">${booking.paid ? 'PAID' : 'UNPAID'}</span>
                   <button class="btn secondary" onclick="openAppointmentDetail('${booking.kind || 'online'}', '${booking.id}')">Details</button>
-                  <button class="btn good" onclick="markAppointmentPaid('${booking.kind || 'online'}', '${booking.id}')">Paid</button>
+                  ${paymentToolsEnabled ? `<button class="btn good" onclick="markAppointmentPaid('${booking.kind || 'online'}', '${booking.id}')">Paid</button>` : ''}
                   <button class="btn secondary" onclick="openAppointmentNotes('${booking.kind || 'online'}', '${booking.id}')">Notes</button>
                   <button class="btn warn" onclick="updateAppointmentStatus('${booking.kind || 'online'}', '${booking.id}', 'Completed')">Complete</button>
                   <button class="btn warn" onclick="cancelAppointment('${booking.kind || 'online'}', '${booking.id}')">Cancel</button>
@@ -2399,6 +2449,10 @@
     }
 
     async function markAppointmentPaid(kind, id) {
+      if (!hasPlanFeature('paymentLogs')) {
+        toast('Payment and tip logging requires Professional or Scale');
+        return;
+      }
       const booking = findAppointment(kind, id);
       if (!booking) {
         toast('Appointment not found');
@@ -2411,6 +2465,10 @@
     }
 
     async function saveAppointmentPayment(kind, id) {
+      if (!hasPlanFeature('paymentLogs')) {
+        toast('Payment and tip logging requires Professional or Scale');
+        return;
+      }
       const amount = Number(document.getElementById('detailPaymentAmount')?.value || 0);
       const tip = Number(document.getElementById('detailPaymentTip')?.value || 0);
       const method = document.getElementById('detailPaymentMethod')?.value || 'Cash';
@@ -2419,6 +2477,10 @@
     }
 
     async function saveAppointmentPaymentValues(kind, id, amount, tip, method, paid) {
+      if (!hasPlanFeature('paymentLogs')) {
+        toast('Payment and tip logging requires Professional or Scale');
+        return;
+      }
       const booking = findAppointment(kind, id);
       if (!booking) {
         toast('Appointment not found');
@@ -3059,6 +3121,8 @@
     function providerSchedule() {
       const provider = currentProvider();
       if (!provider) return noProviderState('Availability & Schedule Planning');
+      const features = planFeatures(provider);
+      const maxRangesPerDay = features.maxRangesPerDay;
       const editingEffectiveStart = latestAvailabilityStart(provider.id);
       const availabilityRows = providerAvailabilityForVersion(provider.id, editingEffectiveStart);
       const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -3077,6 +3141,7 @@
               <input id="availabilityEffectiveStart" type="date" value="${editingEffectiveStart}">
               <span class="muted small">Use a future date to plan ahead. Dates before it keep using the previous schedule version.</span>
             </label>
+            ${maxRangesPerDay === 1 ? '<div class="item" style="margin-bottom:14px"><strong>Starter schedule</strong><br><span class="muted">Starter supports one availability range per weekday. Professional and Scale unlock multiple ranges.</span></div>' : ''}
             <datalist id="timeOptions">
               ${timeOptionsHtml('')}
             </datalist>
@@ -3105,7 +3170,7 @@
                       <strong>${day} setup</strong>
                       <div class="btn-row">
                         <label style="display:flex;align-items:center;gap:8px;font-weight:800"><input id="avail-active-${key}" type="checkbox" ${activeRows.length ? 'checked' : ''}> Open</label>
-                        <button class="btn secondary" onclick="addAvailabilityRange('${day}')">Add range</button>
+                        <button class="btn secondary" onclick="addAvailabilityRange('${day}')" ${renderRows.length >= maxRangesPerDay ? 'disabled' : ''}>Add range</button>
                       </div>
                     </div>
                     <div id="avail-ranges-${key}" data-day="${day}">
@@ -3277,6 +3342,11 @@
       const container = document.getElementById(`avail-ranges-${key}`);
       if (!container) return;
       const index = container.querySelectorAll('[data-range-block="true"]').length;
+      const maxRangesPerDay = planFeatures().maxRangesPerDay;
+      if (index >= maxRangesPerDay) {
+        toast('Multiple availability ranges require Professional or Scale');
+        return;
+      }
       container.insertAdjacentHTML('beforeend', renderAvailabilityRange(day, {
         id: '',
         startTime: '09:00 AM',
@@ -3303,6 +3373,15 @@
     function providerPayments() {
       const provider = currentProvider();
       if (!provider) return noProviderState('Payments & Tips Logging');
+      if (!hasPlanFeature('paymentLogs', provider)) {
+        return html`
+          ${pageHead('Payments & Tips Logging', 'Professional and Scale providers can log service fees and tips separately.', `${providerPlan(provider)} plan`)}
+          <div class="card">
+            ${planUpgradeNotice('Payment and tip logging')}
+            <p class="muted" style="margin-bottom:0">Starter still supports client booking, offline bookings, and one weekly availability range per weekday.</p>
+          </div>
+        `;
+      }
       const payments = providerPaymentsForCurrent();
       const serviceTotal = payments.filter(payment => String(payment.type).toLowerCase() !== 'tip').reduce((total, payment) => total + payment.amount, 0);
       const tipTotal = payments.filter(payment => String(payment.type).toLowerCase() === 'tip').reduce((total, payment) => total + payment.amount, 0);
@@ -4250,6 +4329,7 @@
         return;
       }
       const defaultAmount = defaultPaymentAmountForBooking(booking);
+      const paymentToolsEnabled = hasPlanFeature('paymentLogs');
 
       openModal('Appointment Details', html`
         <div class="grid two">
@@ -4270,7 +4350,7 @@
             <span class="muted">${formatCurrency(defaultAmount)}${booking.method ? ` via ${booking.method}` : ''}${booking.tip ? ` · tip ${formatCurrency(booking.tip)}` : ''}</span>
           </div>
         </div>
-        <div class="card" style="margin-top:14px;box-shadow:none">
+        ${paymentToolsEnabled ? html`<div class="card" style="margin-top:14px;box-shadow:none">
           <h3>Enter Payment</h3>
           <div class="form-grid">
             <label>Service payment<input id="detailPaymentAmount" type="number" min="0" step="1" value="${defaultAmount}"></label>
@@ -4287,13 +4367,13 @@
             </label>
           </div>
           <button class="btn good" style="margin-top:14px" onclick="saveAppointmentPayment('${kind}', '${id}')">Save Payment</button>
-        </div>
+        </div>` : html`<div class="card" style="margin-top:14px;box-shadow:none">${planUpgradeNotice('Payment and tip logging')}</div>`}
         <div class="item" style="margin-top:14px">
           <strong>Notes</strong><br>
           <span class="muted">${booking.providerNotes || booking.notes || 'No notes yet.'}</span>
         </div>
         <div class="btn-row" style="margin-top:14px">
-          <button class="btn good" onclick="markAppointmentPaid('${kind}', '${id}')">Mark Paid</button>
+          ${paymentToolsEnabled ? `<button class="btn good" onclick="markAppointmentPaid('${kind}', '${id}')">Mark Paid</button>` : ''}
           <button class="btn secondary" onclick="openAppointmentNotes('${kind}', '${id}')">Log Notes</button>
           <button class="btn warn" onclick="updateAppointmentStatus('${kind}', '${id}', 'Completed')">Mark Complete</button>
           <button class="btn warn" onclick="cancelAppointment('${kind}', '${id}')">Cancel</button>
@@ -4509,14 +4589,21 @@
       const targetEffectiveStart = document.getElementById('availabilityEffectiveStart')?.value || new Date().toISOString().slice(0, 10);
       const existingRows = providerAvailabilityForVersion(provider.id, targetEffectiveStart);
       const targetRowIds = new Set(existingRows.map(row => String(row.id)));
+      const maxRangesPerDay = planFeatures(provider).maxRangesPerDay;
       const rowsToDelete = [];
       const rowsToSave = [];
+      let validationError = '';
 
       days.forEach(day => {
         const key = day.toLowerCase();
         const isActive = Boolean(document.getElementById(`avail-active-${key}`)?.checked);
         const dayExistingRows = existingRows.filter(row => row.dayOfWeek === day);
         const rangeBlocks = Array.from(document.querySelectorAll(`#avail-ranges-${key} [data-range-block="true"]`));
+
+        if (isActive && rangeBlocks.length > maxRangesPerDay) {
+          validationError = `${providerPlan(provider)} allows ${maxRangesPerDay} availability range per weekday. Remove extra ${day} ranges or upgrade the provider.`;
+          return;
+        }
 
         if (!isActive) {
           rowsToSave.push({
@@ -4564,6 +4651,11 @@
         const keptIds = new Set(rowsToSave.filter(row => row.dayOfWeek === day && row.id).map(row => String(row.id)));
         rowsToDelete.push(...dayExistingRows.filter(row => row.id && !keptIds.has(String(row.id))));
       });
+
+      if (validationError) {
+        toast(validationError);
+        return;
+      }
 
       try {
         const savedRows = [];

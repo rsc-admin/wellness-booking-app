@@ -587,7 +587,42 @@
       max-width: 100%;
     }
 
-    .booking-day {
+    .booking-date-nav {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      display: grid;
+      grid-template-columns: 48px minmax(0, 1fr) 48px;
+      align-items: center;
+      overflow: hidden;
+      background: #fff;
+    }
+
+    .booking-date-nav button {
+      border: 0;
+      background: #eef0f4;
+      min-height: 48px;
+      cursor: pointer;
+      font-weight: 900;
+      color: var(--ink);
+    }
+
+    .booking-date-label {
+      text-align: center;
+      font-weight: 900;
+      padding: 0 8px;
+    }
+
+    .booking-time-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(112px, 1fr));
+      gap: 8px;
+      max-height: 240px;
+      overflow: auto;
+      padding-right: 2px;
+    }
+
+    .booking-day,
+    .booking-time {
       border: 1px solid var(--line);
       border-radius: 8px;
       background: #fff;
@@ -596,6 +631,11 @@
       cursor: pointer;
       text-align: center;
       font-weight: 900;
+    }
+
+    .booking-time {
+      padding: 12px 8px;
+      color: var(--ink);
     }
 
     .booking-day span {
@@ -612,14 +652,22 @@
       color: var(--good);
     }
 
-    .booking-day:disabled {
+    .booking-time.available {
+      border-color: #b8dfc5;
+      background: #f4fbf6;
+      color: var(--good);
+    }
+
+    .booking-day:disabled,
+    .booking-time:disabled {
       cursor: not-allowed;
       color: #9ca0a8;
       background: #f4f5f7;
       opacity: 0.72;
     }
 
-    .booking-day.selected {
+    .booking-day.selected,
+    .booking-time.selected {
       border-color: var(--red);
       background: #fff1f1;
       color: var(--red);
@@ -3593,9 +3641,21 @@
             </select>
           </label>
           <label>Service<select id="bookingService" onchange="refreshBookingTimes()">${renderServiceOptions(provider, { hideBuffer: true })}</select></label>
-          <label>Date<input id="bookingDate" type="date" value="${defaultDate}" onchange="refreshBookingTimes()"></label>
+          <div>
+            <strong>Date</strong>
+            <input id="bookingDate" type="hidden" value="${defaultDate}">
+            <div class="booking-date-nav" style="margin-top:8px">
+              <button type="button" onclick="shiftBookingWindow(-14)">&#171;</button>
+              <div id="bookingDateLabel" class="booking-date-label">${bookingDateRangeLabel(defaultDate)}</div>
+              <button type="button" onclick="shiftBookingWindow(14)">&#187;</button>
+            </div>
+          </div>
           <div id="bookingDayPicker">${renderBookingDayPicker(provider.id, defaultDate, defaultService)}</div>
-          <label>Available time<select id="bookingTime">${renderSlotOptions(slots)}</select></label>
+          <div>
+            <strong>Available time</strong>
+            <input id="bookingTime" type="hidden" value="${slots[0] || ''}">
+            <div id="bookingTimePicker" class="booking-time-grid" style="margin-top:8px">${renderTimePicker(slots, slots[0] || '')}</div>
+          </div>
           <p id="bookingAvailabilityMessage" class="muted small">${availabilityMessage(provider.id, defaultDate, slots)}</p>
           <button class="btn" onclick="showBookingContactStep()">Next</button>
         </div>
@@ -3635,10 +3695,48 @@
       return `<div class="booking-day-grid">${days}</div>`;
     }
 
+    function bookingDateRangeLabel(selectedDate) {
+      const selected = new Date(`${selectedDate || todayDateValue()}T00:00:00`);
+      const start = new Date(selected);
+      start.setDate(selected.getDate() - selected.getDay());
+      const end = new Date(start);
+      end.setDate(start.getDate() + 13);
+      const options = { month: 'short', day: 'numeric' };
+      return `${start.toLocaleDateString('en-US', options)} - ${end.toLocaleDateString('en-US', options)}`;
+    }
+
     function selectBookingDate(dateValue) {
       const dateInput = document.getElementById('bookingDate');
       if (dateInput) dateInput.value = dateValue;
       refreshBookingTimes();
+    }
+
+    function shiftBookingWindow(dayDelta) {
+      const dateInput = document.getElementById('bookingDate');
+      const current = new Date(`${dateInput?.value || todayDateValue()}T00:00:00`);
+      current.setDate(current.getDate() + dayDelta);
+      const nextValue = current.toISOString().slice(0, 10);
+      if (dateInput) dateInput.value = nextValue < todayDateValue() ? todayDateValue() : nextValue;
+      refreshBookingTimes();
+    }
+
+    function renderTimePicker(slots, selectedTime = '') {
+      if (!slots.length) {
+        return '<button class="booking-time" type="button" disabled>No available times</button>';
+      }
+      const selected = selectedTime || slots[0];
+      return slots.map(slot => {
+        const classes = ['booking-time', 'available', slot === selected ? 'selected' : ''].filter(Boolean).join(' ');
+        return `<button class="${classes}" onclick="selectBookingTime('${slot}')" type="button">${slot}</button>`;
+      }).join('');
+    }
+
+    function selectBookingTime(timeValue) {
+      const timeInput = document.getElementById('bookingTime');
+      if (timeInput) timeInput.value = timeValue;
+      document.querySelectorAll('.booking-time').forEach(button => {
+        button.classList.toggle('selected', button.textContent.trim() === timeValue);
+      });
     }
 
     function showBookingContactStep() {
@@ -3712,13 +3810,23 @@
       const dateValue = document.getElementById('bookingDate')?.value || '';
       const service = selectedServiceDetails('bookingService');
       const slots = availableSlotsFor(providerId, dateValue, service.duration, true, service.buffer);
-      const timeSelect = document.getElementById('bookingTime');
-      if (timeSelect) {
-        timeSelect.innerHTML = renderSlotOptions(slots);
+      const timeInput = document.getElementById('bookingTime');
+      const previousTime = timeInput?.value || '';
+      const selectedTime = slots.includes(previousTime) ? previousTime : (slots[0] || '');
+      if (timeInput) {
+        timeInput.value = selectedTime;
+      }
+      const timePicker = document.getElementById('bookingTimePicker');
+      if (timePicker) {
+        timePicker.innerHTML = renderTimePicker(slots, selectedTime);
       }
       const message = document.getElementById('bookingAvailabilityMessage');
       if (message) {
         message.textContent = availabilityMessage(providerId, dateValue, slots);
+      }
+      const dateLabel = document.getElementById('bookingDateLabel');
+      if (dateLabel) {
+        dateLabel.textContent = bookingDateRangeLabel(dateValue);
       }
       const dayPicker = document.getElementById('bookingDayPicker');
       if (dayPicker) {

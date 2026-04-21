@@ -1068,6 +1068,7 @@
       availability: [],
       favorites: [],
       deletedDataRequests: [],
+      planRequests: [],
       smsLog: [],
       clientPins: loadLocalObject(CLIENT_PINS_KEY),
       providerPins: loadLocalObject(PROVIDER_PINS_KEY),
@@ -2167,6 +2168,10 @@
       return providerExpensesForCurrent().filter(expense => dateWithinScheduleFilters(expense.date));
     }
 
+    function providerPlanRequests(providerId = currentProvider()?.id) {
+      return state.planRequests.filter(request => String(request.providerId) === String(providerId));
+    }
+
     function providerRatingsForCurrent() {
       const provider = currentProvider();
       if (!provider) return [];
@@ -2524,11 +2529,55 @@
         toast('No provider selected');
         return;
       }
-      await updateProviderSubscription(provider.id, plan);
+      const currentPlan = providerPlan(provider);
+      const request = {
+        id: `PLAN-REQUEST-${Date.now()}`,
+        providerId: provider.id,
+        providerName: provider.name,
+        currentPlan,
+        requestedPlan: plan,
+        status: 'PENDING',
+        requestedAt: new Date().toISOString()
+      };
+
+      state.planRequests = [request, ...state.planRequests];
+      await saveAppsScriptWrite('createPlanRequest', {
+        providerId: request.providerId,
+        providerName: request.providerName,
+        currentPlan: request.currentPlan,
+        requestedPlan: request.requestedPlan,
+        status: request.status,
+        requestedAt: request.requestedAt
+      });
       closeModal();
-      if (state.view === 'provider-schedule' || state.view === 'provider-payments' || state.view === 'provider-profile') {
-        render();
+      render();
+      toast(`Upgrade request sent to admin for ${plan}`);
+    }
+
+    async function approvePlanRequest(requestId) {
+      const request = state.planRequests.find(item => String(item.id) === String(requestId));
+      if (!request) {
+        toast('Plan request not found');
+        return;
       }
+      await updateProviderSubscription(request.providerId, request.requestedPlan);
+      state.planRequests = state.planRequests.map(item =>
+        String(item.id) === String(requestId)
+          ? { ...item, status: 'APPROVED', resolvedAt: new Date().toISOString() }
+          : item
+      );
+      render();
+      toast(`${request.providerName} upgraded to ${request.requestedPlan}`);
+    }
+
+    function dismissPlanRequest(requestId) {
+      state.planRequests = state.planRequests.map(item =>
+        String(item.id) === String(requestId)
+          ? { ...item, status: 'DISMISSED', resolvedAt: new Date().toISOString() }
+          : item
+      );
+      render();
+      toast('Plan request dismissed');
     }
 
     function findAppointment(kind, id) {
@@ -3036,6 +3085,10 @@
     function clientProfile() {
       const client = currentClient();
       const bookings = clientScopedBookings();
+      const completedBookings = completedClientBookings();
+      const upcomingBookings = bookings.filter(booking => !bookingIsCompleted(booking));
+      const reviewedBookingIds = new Set(state.ratings.map(rating => String(rating.BookingID || rating.bookingId || '')));
+      const favoriteProviders = state.providers.filter(provider => state.favorites.includes(String(provider.id)));
       if (!client) {
         return html`
           ${pageHead('My Profile', 'Clients can create a privacy-first profile to save booking history and preferences.', 'Client account')}
@@ -3052,6 +3105,12 @@
 
       return html`
         ${pageHead('My Profile', 'Manage the client information RedSmart uses for booking history and SMS communication.', client.username)}
+        <div class="grid metrics">
+          ${metric(upcomingBookings.length, 'Upcoming')}
+          ${metric(completedBookings.length, 'Completed')}
+          ${metric(favoriteProviders.length, 'Favorites')}
+          ${metric(bookings.filter(booking => reviewedBookingIds.has(String(booking.id))).length, 'Reviews sent')}
+        </div>
         <div class="grid two">
           <div class="card">
             <h3>Account</h3>
@@ -3059,6 +3118,7 @@
               <div class="item"><strong>Username</strong><br><span class="muted">${client.username}</span></div>
               <div class="item"><strong>Phone</strong><br><span class="muted">${client.phone || 'Not listed'}</span></div>
               <div class="item"><strong>UserID</strong><br><span class="muted">${client.id}</span></div>
+              <div class="item"><strong>SMS verified</strong><br><span class="muted">${client.smsVerified ? 'Yes' : 'No / preview PIN'}</span></div>
               <div class="item"><strong>Saved bookings</strong><br><span class="muted">${bookings.length}</span></div>
             </div>
           </div>
@@ -3072,6 +3132,18 @@
             <div class="btn-row" style="margin-top:14px">
               <button class="btn secondary" onclick="requestDataDeletion()">Request Data Deletion</button>
               <button class="btn secondary" onclick="logout('client')">Logout</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Favorites</h3>
+            <div class="list">
+              ${favoriteProviders.length ? favoriteProviders.map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">${serviceListForClient(provider.services)}</span></div>`).join('') : '<div class="item"><strong>No favorites yet.</strong><br><span class="muted">Favorite providers from Browse Providers.</span></div>'}
+            </div>
+          </div>
+          <div class="card">
+            <h3>Recent Bookings</h3>
+            <div class="list">
+              ${bookings.slice(0, 5).map(booking => `<div class="item"><strong>${booking.service}</strong><br><span class="muted">${providerNameForBooking(booking)} · ${formatDisplayDate(booking.date)} at ${formatDisplayTime(booking.time)} · ${booking.status}</span></div>`).join('') || '<div class="item"><strong>No bookings found.</strong></div>'}
             </div>
           </div>
         </div>
@@ -3223,8 +3295,26 @@
       if (!provider) return noProviderState('My Profile');
       const plan = providerPlan(provider);
       const nextPlan = plan === 'Starter' ? 'Professional' : plan === 'Professional' ? 'Scale' : '';
+      const bookings = providerAppointments();
+      const payments = providerPaymentsForCurrent();
+      const expenses = providerExpensesForCurrent();
+      const ratings = providerRatingsForCurrent();
+      const availabilityRows = state.availability.filter(row => String(row.providerId) === String(provider.id) && row.isActive);
+      const planRequests = providerPlanRequests(provider.id);
+      const serviceRevenue = payments.filter(payment => String(payment.type).toLowerCase() !== 'tip').reduce((total, payment) => total + payment.amount, 0);
+      const tips = payments.filter(payment => String(payment.type).toLowerCase() === 'tip').reduce((total, payment) => total + payment.amount, 0);
+      const expenseTotal = expenses.reduce((total, expense) => total + expense.amount, 0);
+      const avgRating = ratings.length
+        ? (ratings.reduce((total, rating) => total + Number(rating.StarRating || rating.starRating || 0), 0) / ratings.length).toFixed(1)
+        : 'New';
       return html`
         ${pageHead('My Profile', 'Provider account, subscription, business details, and workbook identity.', provider.name)}
+        <div class="grid metrics">
+          ${metric(bookings.length, 'Bookings')}
+          ${metric(formatCurrency(serviceRevenue + tips - expenseTotal), 'Net income')}
+          ${metric(avgRating, 'Rating')}
+          ${metric(planRequests.filter(request => request.status === 'PENDING').length, 'Pending plan requests')}
+        </div>
         <div class="grid two">
           <div class="card">
             <h3>Business Profile</h3>
@@ -3233,7 +3323,9 @@
               <div class="item"><strong>Owner</strong><br><span class="muted">${provider.owner || 'Not listed'}</span></div>
               <div class="item"><strong>ProviderID</strong><br><span class="muted">${provider.id}</span></div>
               <div class="item"><strong>Status</strong><br><span class="status ${statusClass(provider.status)}">${provider.status}</span></div>
+              <div class="item"><strong>Public rating</strong><br><span class="muted">${avgRating} · ${ratings.length} review${ratings.length === 1 ? '' : 's'}</span></div>
               <div class="item"><strong>Services</strong><br><span class="muted">${serviceListForClient(provider.services)}</span></div>
+              <div class="item"><strong>Availability rows</strong><br><span class="muted">${availabilityRows.length} active range${availabilityRows.length === 1 ? '' : 's'}</span></div>
             </div>
           </div>
           <div class="card">
@@ -3255,7 +3347,22 @@
               ${nextPlan ? `<button class="btn" onclick="openProviderUpgradeModal('${nextPlan}')">Upgrade to ${nextPlan}</button>` : '<span class="pill">Top plan</span>'}
               <button class="btn secondary" onclick="logout('provider')">Logout</button>
             </div>
-            <p class="muted small">Plan changes update the provider row Plan field in the workbook when Apps Script sync is available.</p>
+            <p class="muted small">Plan changes create an admin request. Admin approval updates the provider row Plan field.</p>
+          </div>
+          <div class="card">
+            <h3>Business Totals</h3>
+            <div class="list">
+              <div class="item"><strong>Service revenue</strong><br><span class="muted">${formatCurrency(serviceRevenue)}</span></div>
+              <div class="item"><strong>Tips</strong><br><span class="muted">${formatCurrency(tips)}</span></div>
+              <div class="item"><strong>Expenses</strong><br><span class="muted">${formatCurrency(expenseTotal)}</span></div>
+              <div class="item"><strong>Offline/manual bookings</strong><br><span class="muted">${providerOfflineBookingsForCurrent().length}</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Plan Requests</h3>
+            <div class="list">
+              ${planRequests.length ? planRequests.map(request => `<div class="item"><strong>${request.currentPlan} to ${request.requestedPlan}</strong><br><span class="muted">${request.status} · ${new Date(request.requestedAt).toLocaleString()}</span></div>`).join('') : '<div class="item"><strong>No plan requests yet.</strong><br><span class="muted">Upgrade requests appear here and in Admin Dashboard.</span></div>'}
+            </div>
           </div>
         </div>
       `;
@@ -3828,6 +3935,7 @@
       const active = state.providers.filter(provider => provider.status === 'ACTIVE');
       const pending = state.providers.filter(provider => provider.status === 'PENDING');
       const inactive = state.providers.filter(provider => provider.status === 'INACTIVE');
+      const pendingPlanRequests = state.planRequests.filter(request => request.status === 'PENDING');
       const monthlyRevenue = state.providers
         .filter(provider => provider.status === 'ACTIVE')
         .reduce((total, provider) => total + planMonthlyFee(provider.subscription), 0);
@@ -3838,14 +3946,28 @@
           ${metric(active.length, 'Active providers')}
           ${metric(pending.length, 'Pending approval')}
           ${metric(inactive.length, 'Inactive providers')}
+          ${metric(pendingPlanRequests.length, 'Plan requests')}
           ${metric(formatCurrency(monthlyRevenue), 'Monthly recurring revenue')}
         </div>
         <div class="card" style="margin-top:16px">
           <h3>Admin Alerts</h3>
           <div class="list">
+            ${pendingPlanRequests.length ? pendingPlanRequests.map(request => html`
+              <div class="item">
+                <div class="item-head">
+                  <strong>${request.providerName}</strong>
+                  <span class="status pending-status">PLAN REQUEST</span>
+                </div>
+                <span class="muted">${request.currentPlan} to ${request.requestedPlan} · ${new Date(request.requestedAt).toLocaleString()}</span>
+                <div class="btn-row" style="margin-top:10px">
+                  <button class="btn good" onclick="approvePlanRequest('${request.id}')">Approve</button>
+                  <button class="btn secondary" onclick="dismissPlanRequest('${request.id}')">Dismiss</button>
+                </div>
+              </div>
+            `).join('') : ''}
             ${pending.length ? pending.map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">Pending approval. Review profile, services, and subscription setup.</span></div>`).join('') : ''}
             ${inactive.length ? inactive.map(provider => `<div class="item"><strong>${provider.name}</strong><br><span class="muted">Inactive provider hidden from client marketplace.</span></div>`).join('') : ''}
-            ${!pending.length && !inactive.length ? '<div class="item"><strong>No admin alerts.</strong><br><span class="muted">There are no pending or inactive providers in the current workbook data.</span></div>' : ''}
+            ${!pendingPlanRequests.length && !pending.length && !inactive.length ? '<div class="item"><strong>No admin alerts.</strong><br><span class="muted">There are no pending plan requests, pending providers, or inactive providers in the current workbook data.</span></div>' : ''}
           </div>
         </div>
       `;

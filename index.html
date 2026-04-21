@@ -1570,6 +1570,8 @@
           id: provider.ProviderID || index + 1,
           name: provider.BusinessName || provider.Name || 'Unnamed Provider',
           owner: provider.OwnerName || '',
+          phone: provider.Phone || '',
+          email: provider.Email || '',
           status: provider.Status || 'PENDING',
           rating: provider.AverageRating || provider.Rating || 0,
           reviews: provider.TotalReviews || provider.ReviewCount || 0,
@@ -1586,7 +1588,9 @@
       return rows.map((user, index) => ({
         id: user.UserID || index + 1,
         username: user.Username || user.UserName || user.Name || `User ${index + 1}`,
+        name: user.Name || user.FullName || user.DisplayName || user.Username || user.UserName || '',
         phone: user.Phone || '',
+        email: user.Email || '',
         userType: user.UserType || user.Role || 'Client',
         smsVerified: user.SMSVerified || false,
         raw: user
@@ -3130,9 +3134,16 @@
         <div class="grid two">
           <div class="card">
             <h3>Account</h3>
-            <div class="list">
-              <div class="item"><strong>Username</strong><br><span class="muted">${client.username}</span></div>
-              <div class="item"><strong>Phone</strong><br><span class="muted">${client.phone || 'Not listed'}</span></div>
+            <div class="form-grid">
+              <label>Name<input id="clientProfileName" value="${client.name || client.username || ''}"></label>
+              <label>Username<input id="clientProfileUsername" value="${client.username || ''}"></label>
+              <label>Phone<input id="clientProfilePhone" value="${client.phone || ''}"></label>
+              <label>Email<input id="clientProfileEmail" value="${client.email || ''}"></label>
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn" onclick="saveClientProfile()">Save Profile</button>
+            </div>
+            <div class="list" style="margin-top:14px">
               <div class="item"><strong>UserID</strong><br><span class="muted">${client.id}</span></div>
               <div class="item"><strong>SMS verified</strong><br><span class="muted">${client.smsVerified ? 'Yes' : 'No / preview PIN'}</span></div>
               <div class="item"><strong>Saved bookings</strong><br><span class="muted">${bookings.length}</span></div>
@@ -3164,6 +3175,38 @@
           </div>
         </div>
       `;
+    }
+
+    async function saveClientProfile() {
+      const client = currentClient();
+      if (!client) {
+        toast('No client account selected');
+        return;
+      }
+
+      const patch = {
+        name: document.getElementById('clientProfileName')?.value?.trim() || '',
+        username: document.getElementById('clientProfileUsername')?.value?.trim() || client.username,
+        phone: document.getElementById('clientProfilePhone')?.value?.trim() || '',
+        email: document.getElementById('clientProfileEmail')?.value?.trim() || ''
+      };
+
+      if (patch.username !== client.username && usernameExists(patch.username, client.id)) {
+        toast('That username is already in use');
+        return;
+      }
+
+      const write = await saveAppsScriptWrite('updateUser', {
+        userId: client.id,
+        name: patch.name,
+        username: patch.username,
+        phone: patch.phone,
+        email: patch.email
+      });
+
+      state.users = state.users.map(user => String(user.id) === String(client.id) ? { ...user, ...patch } : user);
+      render();
+      toast(write.queued ? 'Client profile saved locally and queued' : 'Client profile saved');
     }
 
     function clientProviders() {
@@ -3334,9 +3377,16 @@
         <div class="grid two">
           <div class="card">
             <h3>Business Profile</h3>
-            <div class="list">
-              <div class="item"><strong>Business</strong><br><span class="muted">${provider.name}</span></div>
-              <div class="item"><strong>Owner</strong><br><span class="muted">${provider.owner || 'Not listed'}</span></div>
+            <div class="form-grid">
+              <label>Company name<input id="providerProfileName" value="${provider.name || ''}"></label>
+              <label>Owner<input id="providerProfileOwner" value="${provider.owner || ''}"></label>
+              <label>Business phone<input id="providerProfilePhone" value="${provider.phone || provider.raw?.Phone || ''}"></label>
+              <label>Email<input id="providerProfileEmail" value="${provider.email || provider.raw?.Email || ''}"></label>
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn" onclick="saveProviderProfile()">Save Business Profile</button>
+            </div>
+            <div class="list" style="margin-top:14px">
               <div class="item"><strong>ProviderID</strong><br><span class="muted">${provider.id}</span></div>
               <div class="item"><strong>Status</strong><br><span class="status ${statusClass(provider.status)}">${provider.status}</span></div>
               <div class="item"><strong>Public rating</strong><br><span class="muted">${avgRating} · ${ratings.length} review${ratings.length === 1 ? '' : 's'}</span></div>
@@ -3382,6 +3432,33 @@
           </div>
         </div>
       `;
+    }
+
+    async function saveProviderProfile() {
+      const provider = currentProvider();
+      if (!provider) {
+        toast('No provider selected');
+        return;
+      }
+
+      const patch = {
+        name: document.getElementById('providerProfileName')?.value?.trim() || provider.name,
+        owner: document.getElementById('providerProfileOwner')?.value?.trim() || '',
+        phone: document.getElementById('providerProfilePhone')?.value?.trim() || '',
+        email: document.getElementById('providerProfileEmail')?.value?.trim() || ''
+      };
+
+      const write = await saveAppsScriptWrite('updateProvider', {
+        providerId: provider.id,
+        businessName: patch.name,
+        ownerName: patch.owner,
+        phone: patch.phone,
+        email: patch.email
+      });
+
+      state.providers = state.providers.map(item => String(item.id) === String(provider.id) ? { ...item, ...patch } : item);
+      render();
+      toast(write.queued ? 'Provider profile saved locally and queued' : 'Provider profile saved');
     }
 
     function providerServices() {

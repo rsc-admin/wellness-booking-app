@@ -1081,6 +1081,12 @@
         startDate: '',
         endDate: ''
       },
+      expenseFilters: {
+        category: 'All',
+        method: 'All',
+        tax: 'All',
+        recurring: 'All'
+      },
       schedulePreviewMonth: '2026-04',
       reviewReplies: [],
       providers: [],
@@ -2165,7 +2171,16 @@
     }
 
     function filteredProviderExpenses() {
-      return providerExpensesForCurrent().filter(expense => dateWithinScheduleFilters(expense.date));
+      return providerExpensesForCurrent().filter(expense => {
+        if (!dateWithinScheduleFilters(expense.date)) return false;
+        if (state.expenseFilters.category !== 'All' && expense.category !== state.expenseFilters.category) return false;
+        if (state.expenseFilters.method !== 'All' && expense.method !== state.expenseFilters.method) return false;
+        if (state.expenseFilters.tax === 'Deductible' && !expense.taxDeductible) return false;
+        if (state.expenseFilters.tax === 'Non-deductible' && expense.taxDeductible) return false;
+        if (state.expenseFilters.recurring === 'Recurring' && !expense.isRecurring) return false;
+        if (state.expenseFilters.recurring === 'One-time' && expense.isRecurring) return false;
+        return true;
+      });
     }
 
     function providerPlanRequests(providerId = currentProvider()?.id) {
@@ -3716,7 +3731,16 @@
       const totalExpenses = filteredExpenses.reduce((total, expense) => total + expense.amount, 0);
       const recurringExpenses = filteredExpenses.filter(expense => expense.isRecurring).reduce((total, expense) => total + expense.amount, 0);
       const deductibleExpenses = filteredExpenses.filter(expense => expense.taxDeductible).reduce((total, expense) => total + expense.amount, 0);
-      const categories = [...new Set(filteredExpenses.map(expense => expense.category).filter(Boolean))];
+      const categories = [...new Set(expenses.map(expense => expense.category).filter(Boolean))].sort();
+      const methods = [...new Set(expenses.map(expense => expense.method).filter(Boolean))].sort();
+      const topCategories = categories
+        .map(category => ({
+          category,
+          total: filteredExpenses.filter(expense => expense.category === category).reduce((sum, expense) => sum + expense.amount, 0)
+        }))
+        .filter(item => item.total > 0)
+        .sort((a, b) => b.total - a.total);
+      const largestExpense = filteredExpenses.slice().sort((a, b) => b.amount - a.amount)[0];
       const today = new Date().toISOString().slice(0, 10);
 
       return html`
@@ -3725,7 +3749,7 @@
           ${metric(formatCurrency(totalExpenses), 'Filtered expenses')}
           ${metric(formatCurrency(recurringExpenses), 'Recurring')}
           ${metric(formatCurrency(deductibleExpenses), 'Tax deductible')}
-          ${metric(categories.length, 'Categories')}
+          ${metric(largestExpense ? formatCurrency(largestExpense.amount) : '$0', 'Largest expense')}
         </div>
         <div class="grid two" style="margin-top:16px">
           <div class="card">
@@ -3752,12 +3776,38 @@
           </div>
           <div class="card">
             <div class="item-head">
-              <h3>Recent Expenses</h3>
-              <button class="btn secondary" onclick="openScheduleFilters()">Filter</button>
+              <h3>Expense Filters</h3>
+              <button class="btn secondary" onclick="openScheduleFilters()">Date Range</button>
             </div>
+            <div class="form-grid">
+              <label>Category<select id="expenseFilterCategory" onchange="applyExpenseFilters()">
+                ${['All', ...categories].map(category => `<option ${state.expenseFilters.category === category ? 'selected' : ''}>${category}</option>`).join('')}
+              </select></label>
+              <label>Method<select id="expenseFilterMethod" onchange="applyExpenseFilters()">
+                ${['All', ...methods].map(method => `<option ${state.expenseFilters.method === method ? 'selected' : ''}>${method}</option>`).join('')}
+              </select></label>
+              <label>Tax<select id="expenseFilterTax" onchange="applyExpenseFilters()">
+                ${['All', 'Deductible', 'Non-deductible'].map(value => `<option ${state.expenseFilters.tax === value ? 'selected' : ''}>${value}</option>`).join('')}
+              </select></label>
+              <label>Recurring<select id="expenseFilterRecurring" onchange="applyExpenseFilters()">
+                ${['All', 'Recurring', 'One-time'].map(value => `<option ${state.expenseFilters.recurring === value ? 'selected' : ''}>${value}</option>`).join('')}
+              </select></label>
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn secondary" onclick="clearExpenseFilters()">Clear Expense Filters</button>
+            </div>
+            <h3 style="margin-top:18px">Category Breakdown</h3>
+            <div class="list">
+              ${topCategories.length ? topCategories.map(item => `<div class="item"><div class="item-head"><strong>${item.category}</strong><span>${formatCurrency(item.total)}</span></div></div>`).join('') : '<div class="item"><strong>No category totals yet.</strong></div>'}
+            </div>
+          </div>
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card">
+            <h3>Recent Expenses</h3>
             <div class="table-wrap">
               <table>
-                <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Method</th></tr></thead>
+                <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Method</th><th>Flags</th><th></th></tr></thead>
                 <tbody>
                   ${filteredExpenses.length ? filteredExpenses.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 12).map(expense => html`
                     <tr>
@@ -3766,15 +3816,78 @@
                       <td>${expense.description || expense.vendor || 'Expense'}</td>
                       <td>${formatCurrency(expense.amount)}</td>
                       <td>${expense.method}</td>
+                      <td>${expense.isRecurring ? '<span class="status pending-status">Recurring</span>' : ''} ${expense.taxDeductible ? '<span class="status active-status">Tax</span>' : ''}</td>
+                      <td><button class="btn secondary" onclick="openExpenseDetail('${expense.id}')">Details</button></td>
                     </tr>
-                  `).join('') : '<tr><td colspan="5">No expenses logged for this provider.</td></tr>'}
+                  `).join('') : '<tr><td colspan="7">No expenses logged for this provider.</td></tr>'}
                 </tbody>
               </table>
             </div>
             <p class="muted small">${expenses.length} total expense row${expenses.length === 1 ? '' : 's'} loaded for this provider.</p>
           </div>
+          <div class="card">
+            <h3>Recurring Commitments</h3>
+            <div class="list">
+              ${filteredExpenses.filter(expense => expense.isRecurring).length ? filteredExpenses.filter(expense => expense.isRecurring).map(expense => `<div class="item"><strong>${expense.description || expense.category}</strong><br><span class="muted">${formatCurrency(expense.amount)} · ${expense.recurringFrequency || 'Recurring'} · ${expense.vendor || expense.method}</span></div>`).join('') : '<div class="item"><strong>No recurring expenses in this filter.</strong></div>'}
+            </div>
+            <h3 style="margin-top:18px">Receipts</h3>
+            <div class="list">
+              ${filteredExpenses.filter(expense => expense.receiptUrl).length ? filteredExpenses.filter(expense => expense.receiptUrl).map(expense => `<div class="item"><strong>${expense.description || expense.category}</strong><br><a href="${expense.receiptUrl}" target="_blank" rel="noopener">Open receipt</a></div>`).join('') : '<div class="item"><strong>No receipt links saved yet.</strong></div>'}
+            </div>
+          </div>
         </div>
       `;
+    }
+
+    function applyExpenseFilters() {
+      state.expenseFilters = {
+        category: document.getElementById('expenseFilterCategory')?.value || 'All',
+        method: document.getElementById('expenseFilterMethod')?.value || 'All',
+        tax: document.getElementById('expenseFilterTax')?.value || 'All',
+        recurring: document.getElementById('expenseFilterRecurring')?.value || 'All'
+      };
+      render();
+    }
+
+    function clearExpenseFilters() {
+      state.expenseFilters = {
+        category: 'All',
+        method: 'All',
+        tax: 'All',
+        recurring: 'All'
+      };
+      render();
+    }
+
+    function openExpenseDetail(expenseId) {
+      const expense = providerExpensesForCurrent().find(item => String(item.id) === String(expenseId));
+      if (!expense) {
+        toast('Expense not found');
+        return;
+      }
+
+      openModal('Expense Details', html`
+        <div class="grid two">
+          <div class="item"><strong>${expense.description || 'Expense'}</strong><br><span class="muted">${expense.category} · ${formatDisplayDate(expense.date)}</span></div>
+          <div class="item"><strong>${formatCurrency(expense.amount)}</strong><br><span class="muted">${expense.method}${expense.vendor ? ` · ${expense.vendor}` : ''}</span></div>
+          <div class="item"><strong>Tax</strong><br><span class="muted">${expense.taxDeductible ? 'Tax deductible' : 'Not marked deductible'}</span></div>
+          <div class="item"><strong>Recurring</strong><br><span class="muted">${expense.isRecurring ? expense.recurringFrequency || 'Recurring' : 'One-time'}</span></div>
+        </div>
+        ${expense.receiptUrl ? `<p><a href="${expense.receiptUrl}" target="_blank" rel="noopener">Open receipt</a></p>` : ''}
+        <div class="item" style="margin-top:14px"><strong>Notes</strong><br><span class="muted">${expense.notes || 'No notes.'}</span></div>
+        <div class="btn-row" style="margin-top:14px">
+          <button class="btn secondary" onclick="removeLocalExpense('${expense.id}')">Remove Local Entry</button>
+          <button class="btn" onclick="closeModal()">Done</button>
+        </div>
+        <p class="muted small">Removing here updates the preview state. Add a deleteExpense Apps Script action before using deletion in production.</p>
+      `);
+    }
+
+    function removeLocalExpense(expenseId) {
+      state.expenses = state.expenses.filter(expense => String(expense.id) !== String(expenseId));
+      closeModal();
+      render();
+      toast('Expense removed from this preview');
     }
 
     async function saveProviderExpense() {

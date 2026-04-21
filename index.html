@@ -1092,6 +1092,7 @@
       client: [
         ['client-login', 'Start / Login'],
         ['client-dashboard', 'Dashboard'],
+        ['client-profile', 'My Profile'],
         ['client-providers', 'Browse Providers'],
         ['client-bookings', 'My Bookings'],
         ['client-privacy', 'Privacy Controls']
@@ -1099,6 +1100,7 @@
       provider: [
         ['provider-login', 'Provider Login'],
         ['provider-dashboard', 'Dashboard'],
+        ['provider-profile', 'My Profile'],
         ['provider-services', 'Services'],
         ['provider-schedule', 'Schedule'],
         ['provider-payments', 'Payments & Tips'],
@@ -1260,7 +1262,10 @@
       return html`
         <div class="item" style="border-left:4px solid var(--red)">
           <strong>${featureLabel} requires ${requiredPlan} or Scale.</strong><br>
-          <span class="muted">Ask the admin to update this provider subscription before using this tool.</span>
+          <span class="muted">Upgrade this provider subscription to unlock the tool.</span>
+          <div class="btn-row" style="margin-top:10px">
+            <button class="btn" onclick="openProviderUpgradeModal('${requiredPlan}')">Upgrade Plan</button>
+          </div>
         </div>
       `;
     }
@@ -2492,6 +2497,40 @@
       toast(write.queued ? `${provider.name} subscription saved locally and queued` : `${provider.name} subscription updated`);
     }
 
+    function openProviderUpgradeModal(targetPlan = 'Professional') {
+      const provider = currentProvider();
+      if (!provider) {
+        toast('No provider selected');
+        return;
+      }
+      const currentPlan = providerPlan(provider);
+      openModal('Upgrade Subscription', html`
+        <p class="muted" style="margin-top:0">${provider.name} is currently on ${currentPlan}. Choose a plan to update the workbook Plan field.</p>
+        <div class="grid three">
+          ${['Starter', 'Professional', 'Scale'].map(plan => html`
+            <button class="choice ${plan === targetPlan ? 'active' : ''}" onclick="requestProviderPlan('${plan}')">
+              <strong>${plan}</strong>
+              <span>${formatCurrency(planMonthlyFee(plan))}/mo</span>
+              <span>${planDescription(plan)}</span>
+            </button>
+          `).join('')}
+        </div>
+      `);
+    }
+
+    async function requestProviderPlan(plan) {
+      const provider = currentProvider();
+      if (!provider) {
+        toast('No provider selected');
+        return;
+      }
+      await updateProviderSubscription(provider.id, plan);
+      closeModal();
+      if (state.view === 'provider-schedule' || state.view === 'provider-payments' || state.view === 'provider-profile') {
+        render();
+      }
+    }
+
     function findAppointment(kind, id) {
       const list = kind === 'offline' ? state.offlineBookings : state.bookings;
       return list.find(booking => String(booking.id) === String(id));
@@ -2994,6 +3033,51 @@
       `;
     }
 
+    function clientProfile() {
+      const client = currentClient();
+      const bookings = clientScopedBookings();
+      if (!client) {
+        return html`
+          ${pageHead('My Profile', 'Clients can create a privacy-first profile to save booking history and preferences.', 'Client account')}
+          <div class="card">
+            <strong>No client account is signed in.</strong>
+            <p class="muted">Continue as guest to book without an account, or create an account with username, phone, and PIN.</p>
+            <div class="btn-row">
+              <button class="btn" onclick="setView('client-login')">Sign In</button>
+              <button class="btn secondary" onclick="openCreateClientAccount()">Create Account</button>
+            </div>
+          </div>
+        `;
+      }
+
+      return html`
+        ${pageHead('My Profile', 'Manage the client information RedSmart uses for booking history and SMS communication.', client.username)}
+        <div class="grid two">
+          <div class="card">
+            <h3>Account</h3>
+            <div class="list">
+              <div class="item"><strong>Username</strong><br><span class="muted">${client.username}</span></div>
+              <div class="item"><strong>Phone</strong><br><span class="muted">${client.phone || 'Not listed'}</span></div>
+              <div class="item"><strong>UserID</strong><br><span class="muted">${client.id}</span></div>
+              <div class="item"><strong>Saved bookings</strong><br><span class="muted">${bookings.length}</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Privacy</h3>
+            <div class="list">
+              <div class="item">No legal name required.</div>
+              <div class="item">Phone is used for SMS booking communication.</div>
+              <div class="item">Booking history appears only when rows match this account.</div>
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              <button class="btn secondary" onclick="requestDataDeletion()">Request Data Deletion</button>
+              <button class="btn secondary" onclick="logout('client')">Logout</button>
+            </div>
+          </div>
+        </div>
+      `;
+    }
+
     function clientProviders() {
       const activeProviders = state.providers.filter(provider => provider.status === 'ACTIVE');
       return html`
@@ -3134,6 +3218,49 @@
       `;
     }
 
+    function providerProfile() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('My Profile');
+      const plan = providerPlan(provider);
+      const nextPlan = plan === 'Starter' ? 'Professional' : plan === 'Professional' ? 'Scale' : '';
+      return html`
+        ${pageHead('My Profile', 'Provider account, subscription, business details, and workbook identity.', provider.name)}
+        <div class="grid two">
+          <div class="card">
+            <h3>Business Profile</h3>
+            <div class="list">
+              <div class="item"><strong>Business</strong><br><span class="muted">${provider.name}</span></div>
+              <div class="item"><strong>Owner</strong><br><span class="muted">${provider.owner || 'Not listed'}</span></div>
+              <div class="item"><strong>ProviderID</strong><br><span class="muted">${provider.id}</span></div>
+              <div class="item"><strong>Status</strong><br><span class="status ${statusClass(provider.status)}">${provider.status}</span></div>
+              <div class="item"><strong>Services</strong><br><span class="muted">${serviceListForClient(provider.services)}</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Subscription</h3>
+            <div class="item">
+              <strong>${plan}</strong><br>
+              <span class="muted">${planDescription(plan)}</span><br>
+              <span class="muted">${formatCurrency(planMonthlyFee(plan))} per month</span>
+            </div>
+            <div class="grid three" style="margin-top:14px">
+              ${['Starter', 'Professional', 'Scale'].map(option => html`
+                <button class="choice ${plan === option ? 'active' : ''}" onclick="requestProviderPlan('${option}')">
+                  <strong>${option}</strong>
+                  <span>${formatCurrency(planMonthlyFee(option))}/mo</span>
+                </button>
+              `).join('')}
+            </div>
+            <div class="btn-row" style="margin-top:14px">
+              ${nextPlan ? `<button class="btn" onclick="openProviderUpgradeModal('${nextPlan}')">Upgrade to ${nextPlan}</button>` : '<span class="pill">Top plan</span>'}
+              <button class="btn secondary" onclick="logout('provider')">Logout</button>
+            </div>
+            <p class="muted small">Plan changes update the provider row Plan field in the workbook when Apps Script sync is available.</p>
+          </div>
+        </div>
+      `;
+    }
+
     function providerServices() {
       const provider = currentProvider() || { id: 1, services: [] };
       if (!currentProvider()) return noProviderState('Service Management');
@@ -3205,7 +3332,7 @@
               <input id="availabilityEffectiveStart" type="date" value="${editingEffectiveStart}">
               <span class="muted small">Use a future date to plan ahead. Dates before it keep using the previous schedule version.</span>
             </label>
-            ${maxRangesPerDay === 1 ? '<div class="item" style="margin-bottom:14px"><strong>Starter schedule</strong><br><span class="muted">Starter supports one availability range per weekday. Professional and Scale unlock multiple ranges.</span></div>' : ''}
+            ${maxRangesPerDay === 1 ? html`<div class="item" style="margin-bottom:14px"><strong>Starter schedule</strong><br><span class="muted">Starter supports one availability range per weekday. Professional and Scale unlock multiple ranges.</span><div class="btn-row" style="margin-top:10px"><button class="btn" onclick="openProviderUpgradeModal('Professional')">Upgrade Plan</button></div></div>` : ''}
             <datalist id="timeOptions">
               ${timeOptionsHtml('')}
             </datalist>
@@ -3816,10 +3943,12 @@
       'provider-login': providerLogin,
       'admin-login': adminLogin,
       'client-dashboard': clientDashboard,
+      'client-profile': clientProfile,
       'client-providers': clientProviders,
       'client-bookings': clientBookings,
       'client-privacy': clientPrivacy,
       'provider-dashboard': providerDashboard,
+      'provider-profile': providerProfile,
       'provider-services': providerServices,
       'provider-schedule': providerSchedule,
       'provider-payments': providerPayments,

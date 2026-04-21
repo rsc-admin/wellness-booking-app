@@ -981,8 +981,8 @@
     <div class="sidebar-backdrop" onclick="closeSidebar()" aria-hidden="true"></div>
     <aside class="sidebar">
       <div class="identity">
-        <strong id="identityName">Sunseeker</strong>
-        <span id="identityMeta">Privacy-first client account</span>
+        <strong id="identityName">New client</strong>
+        <span id="identityMeta">Book as guest or sign in</span>
       </div>
       <div class="mobile-role-switcher" aria-label="Role selector">
         <button class="active" data-role="client">Client</button>
@@ -1539,7 +1539,7 @@
           rating: provider.AverageRating || provider.Rating || 0,
           reviews: provider.TotalReviews || provider.ReviewCount || 0,
           services,
-          subscription: provider.SubscriptionPlan || provider.Plan || 'Unassigned',
+          subscription: provider.SubscriptionPlan || provider.Subscription || provider.Tier || provider.Plan || 'Unassigned',
           bufferTime: provider.BufferTime || 15,
           raw: provider
         };
@@ -2428,7 +2428,13 @@
         return;
       }
 
-      const write = await saveAppsScriptWrite('updateProvider', { providerId, subscriptionPlan: subscription });
+      const write = await saveAppsScriptWrite('updateProvider', {
+        providerId,
+        subscriptionPlan: subscription,
+        subscription,
+        tier: subscription,
+        plan: subscription
+      });
       state.providers = state.providers.map(item => String(item.id) === String(providerId) ? { ...item, subscription } : item);
       render();
       toast(write.queued ? `${provider.name} subscription saved locally and queued` : `${provider.name} subscription updated`);
@@ -3003,7 +3009,7 @@
           <div class="card">
             <h3>Collected Data</h3>
             <div class="list">
-              <div class="item"><strong>Username</strong><br><span class="muted">Sunseeker, chosen by the client</span></div>
+              <div class="item"><strong>Username</strong><br><span class="muted">Chosen by the client when they create or sign into an account.</span></div>
               <div class="item"><strong>Phone</strong><br><span class="muted">Masked in provider views unless communication is needed</span></div>
               <div class="item"><strong>Booking records</strong><br><span class="muted">Service, date, time, provider, status</span></div>
             </div>
@@ -4167,7 +4173,10 @@
           email: document.getElementById('applyEmail')?.value || '',
           phone: document.getElementById('applyPhone')?.value || '',
           bufferTime: 15,
-          subscriptionPlan: provider.subscription
+          subscriptionPlan: provider.subscription,
+          subscription: provider.subscription,
+          tier: provider.subscription,
+          plan: provider.subscription
         });
         if (write.synced) {
           const result = write.result || {};
@@ -4245,6 +4254,9 @@
         email: patch.email,
         status: patch.status,
         subscriptionPlan: patch.subscription,
+        subscription: patch.subscription,
+        tier: patch.subscription,
+        plan: patch.subscription,
         averageRating: patch.rating,
         totalReviews: patch.reviews,
         services: patch.services
@@ -4414,7 +4426,7 @@
     function requestDataDeletion() {
       const request = {
         id: Date.now(),
-        username: 'Sunseeker',
+        username: currentClient()?.username || 'Client',
         requestedAt: new Date().toISOString()
       };
       state.deletedDataRequests.push(request);

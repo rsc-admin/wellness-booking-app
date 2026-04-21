@@ -1189,7 +1189,7 @@
               ${['Starter', 'Professional', 'Scale', 'Trial', 'Unassigned'].map(plan => `<option value="${plan}" ${provider.subscription === plan ? 'selected' : ''}>${plan}</option>`).join('')}
             </select></label>
             <div class="btn-row">
-              <button class="btn secondary" onclick="openProviderDetails('${provider.id}')">View</button>
+              <button class="btn secondary" onclick="openProviderDetails('${provider.id}')">Edit</button>
               ${provider.status === 'PENDING' || provider.status === 'INACTIVE' ? `<button class="btn good" onclick="changeProviderStatus('${provider.id}', 'ACTIVE')">Approve</button>` : ''}
               ${provider.status === 'ACTIVE' ? `<button class="btn warn" onclick="changeProviderStatus('${provider.id}', 'INACTIVE')">Pause</button>` : ''}
             </div>
@@ -4116,14 +4116,65 @@
         toast('Provider not found');
         return;
       }
-      openModal('Provider Details', html`
-        <div class="grid two">
-          <div class="item"><strong>${provider.name}</strong><br><span class="muted">Owner: ${provider.owner || 'Not listed'}</span></div>
-          <div class="item"><strong>Status</strong><br><span class="muted">${provider.status} · ${provider.subscription}</span></div>
-          <div class="item"><strong>Rating</strong><br><span class="muted">${provider.rating || 'New'} stars · ${provider.reviews || 0} reviews</span></div>
-          <div class="item"><strong>Services</strong><br><span class="muted">${provider.services.join(', ')}</span></div>
+      openModal('Edit Provider', html`
+        <div class="form-grid">
+          <label>Business name<input id="adminProviderName" value="${provider.name || ''}"></label>
+          <label>Owner name<input id="adminProviderOwner" value="${provider.owner || ''}"></label>
+          <label>Business phone<input id="adminProviderPhone" value="${provider.phone || provider.raw?.Phone || ''}"></label>
+          <label>Email<input id="adminProviderEmail" value="${provider.email || provider.raw?.Email || ''}"></label>
+          <label>Status<select id="adminProviderStatus">
+            ${['PENDING', 'ACTIVE', 'INACTIVE'].map(status => `<option value="${status}" ${provider.status === status ? 'selected' : ''}>${status}</option>`).join('')}
+          </select></label>
+          <label>Subscription<select id="adminProviderSubscription">
+            ${['Starter', 'Professional', 'Scale', 'Trial', 'Unassigned'].map(plan => `<option value="${plan}" ${provider.subscription === plan ? 'selected' : ''}>${plan}</option>`).join('')}
+          </select></label>
+          <label>Average rating<input id="adminProviderRating" type="number" step="0.1" min="0" max="5" value="${provider.rating || 0}"></label>
+          <label>Total reviews<input id="adminProviderReviews" type="number" min="0" value="${provider.reviews || 0}"></label>
         </div>
+        <label style="margin-top:14px">Services
+          <textarea id="adminProviderServices" placeholder="One service per line">${(provider.services || []).join('\n')}</textarea>
+        </label>
+        <p class="muted small">Services can include duration, price, and buffer, for example: Massage (60 minutes, $90, 15 minute buffer).</p>
+        <button class="btn" style="margin-top:14px" onclick="saveAdminProviderDetails('${provider.id}')">Save Provider</button>
       `);
+    }
+
+    async function saveAdminProviderDetails(providerId) {
+      const provider = findProvider(providerId);
+      if (!provider) {
+        toast('Provider not found');
+        return;
+      }
+
+      const patch = {
+        name: document.getElementById('adminProviderName')?.value?.trim() || provider.name,
+        owner: document.getElementById('adminProviderOwner')?.value?.trim() || '',
+        phone: document.getElementById('adminProviderPhone')?.value?.trim() || '',
+        email: document.getElementById('adminProviderEmail')?.value?.trim() || '',
+        status: document.getElementById('adminProviderStatus')?.value || provider.status,
+        subscription: document.getElementById('adminProviderSubscription')?.value || provider.subscription,
+        rating: Number(document.getElementById('adminProviderRating')?.value || 0),
+        reviews: Number(document.getElementById('adminProviderReviews')?.value || 0),
+        services: parseServices(document.getElementById('adminProviderServices')?.value || '')
+      };
+
+      const write = await saveAppsScriptWrite('updateProvider', {
+        providerId,
+        businessName: patch.name,
+        ownerName: patch.owner,
+        phone: patch.phone,
+        email: patch.email,
+        status: patch.status,
+        subscriptionPlan: patch.subscription,
+        averageRating: patch.rating,
+        totalReviews: patch.reviews,
+        services: patch.services
+      });
+
+      state.providers = state.providers.map(item => String(item.id) === String(providerId) ? { ...item, ...patch } : item);
+      closeModal();
+      render();
+      toast(write.queued ? 'Provider updates saved locally and queued' : 'Provider updated');
     }
 
     async function addProviderService(providerId) {

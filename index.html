@@ -1061,6 +1061,7 @@
       currentClientId: '',
       currentProviderId: '',
       payments: [],
+      expenses: [],
       ratings: [],
       timeOff: [],
       offlineBookings: [],
@@ -1101,6 +1102,7 @@
         ['provider-services', 'Services'],
         ['provider-schedule', 'Schedule'],
         ['provider-payments', 'Payments & Tips'],
+        ['provider-expenses', 'Expenses'],
         ['provider-clients', 'Offline Clients'],
         ['provider-reviews', 'Reviews']
       ],
@@ -1458,8 +1460,10 @@
         state.users = normalizeUsers(users);
         state.providers = normalizeProviders(providers);
         const availability = await loadAvailabilityRows(state.providers);
+        const expenses = await loadExpensesRows(state.providers);
         state.bookings = normalizeBookings(bookings);
         state.payments = normalizePayments(payments);
+        state.expenses = normalizeExpenses(expenses);
         state.ratings = Array.isArray(ratings) ? ratings : [];
         state.timeOff = Array.isArray(timeOff) ? timeOff : [];
         state.offlineBookings = normalizeOfflineBookings(offlineBookings);
@@ -1497,6 +1501,24 @@
           return providerRows.flat();
         } catch (providerAvailabilityError) {
           console.warn('Availability actions are unavailable:', allAvailabilityError, providerAvailabilityError);
+          return [];
+        }
+      }
+    }
+
+    async function loadExpensesRows(providers) {
+      try {
+        return await callAppsScript('getExpenses');
+      } catch (allExpensesError) {
+        try {
+          const providerRows = await Promise.all(
+            providers.map(provider =>
+              callAppsScriptWithParams('getProviderExpenses', { id: provider.id }).catch(() => [])
+            )
+          );
+          return providerRows.flat();
+        } catch (providerExpensesError) {
+          console.warn('Expense actions are unavailable:', allExpensesError, providerExpensesError);
           return [];
         }
       }
@@ -1683,6 +1705,26 @@
         method: payment.PaymentMethod || 'Unknown',
         type: payment.PaymentType || 'Service',
         date: formatSheetDate(payment.CreatedDate || payment.Date)
+      }));
+    }
+
+    function normalizeExpenses(rows) {
+      if (!Array.isArray(rows)) return [];
+      return rows.map((expense, index) => ({
+        id: expense.ExpenseID || index + 1,
+        providerId: expense.ProviderID || '',
+        date: formatSheetDate(expense.ExpenseDate || expense.Date || expense.CreatedDate),
+        category: expense.Category || 'Other',
+        description: expense.Description || expense.ExpenseDescription || '',
+        amount: Number(expense.Amount || expense.ExpenseAmount || 0),
+        method: expense.PaymentMethod || 'Unknown',
+        vendor: expense.Vendor || '',
+        receiptUrl: expense.ReceiptURL || '',
+        isRecurring: String(expense.IsRecurring || '').toLowerCase() === 'true',
+        recurringFrequency: expense.RecurringFrequency || '',
+        taxDeductible: String(expense.TaxDeductible || '').toLowerCase() === 'true',
+        notes: expense.Notes || '',
+        raw: expense
       }));
     }
 
@@ -2108,6 +2150,16 @@
 
     function filteredProviderPayments() {
       return providerPaymentsForCurrent().filter(payment => dateWithinScheduleFilters(payment.date));
+    }
+
+    function providerExpensesForCurrent() {
+      const provider = currentProvider();
+      if (!provider) return [];
+      return state.expenses.filter(expense => String(expense.providerId) === String(provider.id));
+    }
+
+    function filteredProviderExpenses() {
+      return providerExpensesForCurrent().filter(expense => dateWithinScheduleFilters(expense.date));
     }
 
     function providerRatingsForCurrent() {
@@ -3033,6 +3085,7 @@
       const allBookings = providerAppointments();
       const bookings = filteredProviderAppointments();
       const providerPayments = filteredProviderPayments();
+      const providerExpenses = filteredProviderExpenses();
       const visibleBookingIds = new Set(bookings.map(booking => String(booking.id)));
       const paidAppointmentRevenue = bookings
         .filter(booking => booking.paid)
@@ -3048,15 +3101,20 @@
         .reduce((total, payment) => total + payment.amount, 0);
       const serviceRevenue = paidAppointmentRevenue + loggedServiceRevenue;
       const tips = paidAppointmentTips + loggedTips;
+      const totalRevenue = serviceRevenue + tips;
+      const expensesTotal = providerExpenses.reduce((total, expense) => total + expense.amount, 0);
+      const netRevenue = totalRevenue - expensesTotal;
       const manualCount = bookings.filter(booking => ['offline', 'manual', 'phone', 'text', 'walk-in'].includes(String(booking.source || booking.kind).toLowerCase())).length;
       return html`
-        ${pageHead('Provider Dashboard', 'One place for appointments, service revenue, tips, walk-ins, buffer time, ratings, and the next appointment.', provider?.name || 'Provider')}
+        ${pageHead('Provider Dashboard', 'One place for appointments, service revenue, tips, expenses, net income, and the next appointment.', provider?.name || 'Provider')}
         ${workbookNotice()}
         ${provider ? '' : '<div class="card" style="margin-bottom:16px"><strong>No provider selected.</strong> <span class="muted">Sign in as a provider to see your dashboard.</span></div>'}
         <div class="grid metrics">
           ${metric(bookings.length, 'Total appointments')}
           ${metric(formatCurrency(serviceRevenue), 'Service revenue')}
           ${metric(formatCurrency(tips), 'Tips')}
+          ${metric(formatCurrency(expensesTotal), 'Expenses')}
+          ${metric(formatCurrency(netRevenue), 'Net income')}
           ${metric(manualCount, 'Manual/offline')}
         </div>
         <div class="card" style="margin-top:16px">
@@ -3416,6 +3474,137 @@
       `;
     }
 
+    function providerExpenses() {
+      const provider = currentProvider();
+      if (!provider) return noProviderState('Expense Tracking');
+      const expenses = providerExpensesForCurrent();
+      const filteredExpenses = filteredProviderExpenses();
+      const totalExpenses = filteredExpenses.reduce((total, expense) => total + expense.amount, 0);
+      const recurringExpenses = filteredExpenses.filter(expense => expense.isRecurring).reduce((total, expense) => total + expense.amount, 0);
+      const deductibleExpenses = filteredExpenses.filter(expense => expense.taxDeductible).reduce((total, expense) => total + expense.amount, 0);
+      const categories = [...new Set(filteredExpenses.map(expense => expense.category).filter(Boolean))];
+      const today = new Date().toISOString().slice(0, 10);
+
+      return html`
+        ${pageHead('Expense Tracking', 'Providers can log operating costs so dashboard revenue shows a fast net-income view.', provider.name)}
+        <div class="grid metrics">
+          ${metric(formatCurrency(totalExpenses), 'Filtered expenses')}
+          ${metric(formatCurrency(recurringExpenses), 'Recurring')}
+          ${metric(formatCurrency(deductibleExpenses), 'Tax deductible')}
+          ${metric(categories.length, 'Categories')}
+        </div>
+        <div class="grid two" style="margin-top:16px">
+          <div class="card">
+            <h3>Add Expense</h3>
+            <div class="form-grid">
+              <label>Date<input id="expenseDate" type="date" value="${today}"></label>
+              <label>Category<select id="expenseCategory">
+                ${['Supplies', 'Rent', 'Marketing', 'Software', 'Travel', 'Training', 'Insurance', 'Fees', 'Other'].map(category => `<option>${category}</option>`).join('')}
+              </select></label>
+              <label>Description<input id="expenseDescription" placeholder="Massage oil, room rental, software"></label>
+              <label>Amount<input id="expenseAmount" type="number" min="0" step="0.01" placeholder="0.00"></label>
+              <label>Payment method<select id="expenseMethod">
+                ${['Cash', 'Card', 'Zelle', 'Venmo', 'PayPal', 'Apple Pay', 'ACH', 'Other'].map(method => `<option>${method}</option>`).join('')}
+              </select></label>
+              <label>Vendor<input id="expenseVendor" placeholder="Optional"></label>
+              <label>Recurring<select id="expenseRecurring"><option value="FALSE">No</option><option value="TRUE">Yes</option></select></label>
+              <label>Frequency<select id="expenseFrequency"><option></option><option>Weekly</option><option>Monthly</option><option>Quarterly</option><option>Annual</option></select></label>
+              <label>Tax deductible<select id="expenseDeductible"><option value="TRUE">Yes</option><option value="FALSE">No</option></select></label>
+              <label>Receipt URL<input id="expenseReceiptUrl" placeholder="Optional link"></label>
+            </div>
+            <textarea id="expenseNotes" style="margin-top:14px" placeholder="Optional notes"></textarea>
+            <button class="btn" style="margin-top:14px" onclick="saveProviderExpense()">Save Expense</button>
+            <p class="muted small">Expenses follow the same dashboard filter range as revenue.</p>
+          </div>
+          <div class="card">
+            <div class="item-head">
+              <h3>Recent Expenses</h3>
+              <button class="btn secondary" onclick="openScheduleFilters()">Filter</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Date</th><th>Category</th><th>Description</th><th>Amount</th><th>Method</th></tr></thead>
+                <tbody>
+                  ${filteredExpenses.length ? filteredExpenses.slice().sort((a, b) => String(b.date).localeCompare(String(a.date))).slice(0, 12).map(expense => html`
+                    <tr>
+                      <td>${formatDisplayDate(expense.date)}</td>
+                      <td>${expense.category}</td>
+                      <td>${expense.description || expense.vendor || 'Expense'}</td>
+                      <td>${formatCurrency(expense.amount)}</td>
+                      <td>${expense.method}</td>
+                    </tr>
+                  `).join('') : '<tr><td colspan="5">No expenses logged for this provider.</td></tr>'}
+                </tbody>
+              </table>
+            </div>
+            <p class="muted small">${expenses.length} total expense row${expenses.length === 1 ? '' : 's'} loaded for this provider.</p>
+          </div>
+        </div>
+      `;
+    }
+
+    async function saveProviderExpense() {
+      const provider = currentProvider();
+      if (!provider) {
+        toast('No provider selected');
+        return;
+      }
+
+      const amount = Number(document.getElementById('expenseAmount')?.value || 0);
+      const description = document.getElementById('expenseDescription')?.value?.trim() || '';
+      if (!amount || amount <= 0) {
+        toast('Enter an expense amount');
+        return;
+      }
+      if (!description) {
+        toast('Enter an expense description');
+        return;
+      }
+
+      const expense = {
+        id: `LOCAL-EXPENSE-${Date.now()}`,
+        providerId: provider.id,
+        date: document.getElementById('expenseDate')?.value || new Date().toISOString().slice(0, 10),
+        category: document.getElementById('expenseCategory')?.value || 'Other',
+        description,
+        amount,
+        method: document.getElementById('expenseMethod')?.value || 'Other',
+        vendor: document.getElementById('expenseVendor')?.value || '',
+        receiptUrl: document.getElementById('expenseReceiptUrl')?.value || '',
+        isRecurring: document.getElementById('expenseRecurring')?.value === 'TRUE',
+        recurringFrequency: document.getElementById('expenseFrequency')?.value || '',
+        taxDeductible: document.getElementById('expenseDeductible')?.value === 'TRUE',
+        notes: document.getElementById('expenseNotes')?.value || ''
+      };
+
+      try {
+        const write = await saveAppsScriptWrite('createExpense', {
+          providerId: expense.providerId,
+          expenseDate: expense.date,
+          category: expense.category,
+          description: expense.description,
+          amount: expense.amount,
+          paymentMethod: expense.method,
+          vendor: expense.vendor,
+          receiptUrl: expense.receiptUrl,
+          isRecurring: expense.isRecurring,
+          recurringFrequency: expense.recurringFrequency,
+          taxDeductible: expense.taxDeductible,
+          notes: expense.notes
+        });
+        if (write.synced) {
+          const result = write.result || {};
+          expense.id = result.expenseId || expense.id;
+        }
+
+        state.expenses = [...state.expenses, expense];
+        render();
+        toast(write.queued ? 'Expense saved locally and queued for workbook retry' : 'Expense saved');
+      } catch (error) {
+        toast(`Expense could not be saved: ${error.message}`);
+      }
+    }
+
     function providerClients() {
       const provider = currentProvider();
       if (!provider) return noProviderState('Offline Client Tracking');
@@ -3634,6 +3823,7 @@
       'provider-services': providerServices,
       'provider-schedule': providerSchedule,
       'provider-payments': providerPayments,
+      'provider-expenses': providerExpenses,
       'provider-clients': providerClients,
       'provider-reviews': providerReviews,
       'admin-dashboard': adminDashboard,

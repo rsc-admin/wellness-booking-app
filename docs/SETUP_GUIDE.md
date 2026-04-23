@@ -1,6 +1,6 @@
-# Wellness Booking App - Google Sheets Integration Setup Guide
+# RedSmart Booking - Google Sheets Integration Setup Guide
 
-This guide walks you through connecting your wellness booking app to Google Sheets for real availability management.
+This guide walks you through connecting your RedSmart Booking app to Google Sheets for real availability management.
 
 ---
 
@@ -9,7 +9,7 @@ This guide walks you through connecting your wellness booking app to Google Shee
 ### 1.1 Create the Sheet
 1. Go to [Google Sheets](https://sheets.google.com)
 2. Click **"+ New"** → **"Blank spreadsheet"**
-3. Name it: **"Wellness Bookings"**
+3. Name it: **"RedSmart Bookings"**
 
 ### 1.2 Set Up Column Headers
 In the first row, create these columns:
@@ -40,7 +40,7 @@ AUTO-002 | Yoga Class     | 2026-04-21 | 10:00 AM | Jamie | 555-2222
 
 ## Step 2: Get Your Google Sheet ID
 
-1. Open your Wellness Bookings sheet
+1. Open your RedSmart Bookings sheet
 2. Look at the URL in your browser's address bar:
 ```
 https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit
@@ -60,7 +60,7 @@ https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit
 2. Create a new project:
    - Click **"Select a Project"** (top left)
    - Click **"NEW PROJECT"**
-   - Name: "Wellness Booking"
+   - Name: "RedSmart Booking"
    - Click **"CREATE"**
 
 ### 3.2 Enable the Sheets API
@@ -82,7 +82,7 @@ https://docs.google.com/spreadsheets/d/SHEET_ID_HERE/edit
 
 ## Step 4: Update Your App Code
 
-In the wellness booking app code, find these two lines near the top:
+In the RedSmart Booking app code, find these two lines near the top:
 
 ```javascript
 const SHEET_ID = 'YOUR_GOOGLE_SHEET_ID_HERE';
@@ -134,7 +134,7 @@ AppSheet can automate email confirmations and add more features.
 2. Sign up for free
 3. Click **"Create App"** → **"Start with Data"**
 4. Choose **"Google Sheets"**
-5. Select your Wellness Bookings sheet
+5. Select your RedSmart Bookings sheet
 
 ### 6.2 Create an Automation (Email Confirmation)
 1. In your AppSheet app, go to **"Automations"**
@@ -142,7 +142,7 @@ AppSheet can automate email confirmations and add more features.
    - **Trigger:** "When a row is added"
    - **Action:** "Send Email"
    - **To:** `[Email]`
-   - **Subject:** "Booking Confirmed - Serenity Wellness"
+   - **Subject:** "Booking Confirmed - RedSmart Booking"
    - **Body:** Create a template with booking details
 
 ### 6.3 Optional - Embed AppSheet in Your App

@@ -1,7 +1,7 @@
 {
-  "name": "wellness-booking-app",
+  "name": "redsmart-booking",
   "version": "1.0.0",
-  "description": "Wellness services booking platform with provider dashboard",
+  "description": "RedSmart Booking multi-provider scheduling service with provider dashboards",
   "private": true,
   "dependencies": {
     "react": "^18.2.0",

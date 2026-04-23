@@ -981,8 +981,8 @@ export default function WellnessBookingGoogleSheets() {
 
       <div className="wellness-container">
         <div className="header">
-          <h1>Serenity Wellness</h1>
-          <p>Book Your Perfect Wellness Experience</p>
+          <h1>RedSmart Booking</h1>
+          <p>Book directly with participating providers</p>
         </div>
 
         {!sheetConfigured && (
@@ -994,6 +994,15 @@ export default function WellnessBookingGoogleSheets() {
             </div>
           </div>
         )}
+
+        <div className="config-banner">
+          <AlertCircle className="flex-shrink-0 text-amber-700" size={20} />
+          <div>
+            RedSmart Booking provides scheduling software only. Services are delivered by independent
+            providers, companies, or individuals, who are responsible for their own licensing,
+            insurance, quality, safety, pricing, cancellations, and customer outcomes.
+          </div>
+        </div>
 
         {sheetConfigured && (
           <div className="config-banner success">

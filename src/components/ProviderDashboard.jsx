@@ -450,7 +450,7 @@ export default function ProviderDashboard({ onBack }) {
       <div style={styles.shell}>
         <div style={styles.header}>
           <div>
-            <h1 style={styles.title}>Serenity Provider Hub</h1>
+            <h1 style={styles.title}>RedSmart Booking Provider Hub</h1>
             <p style={styles.subtitle}>Bookings, work hours, and manual entries in one place.</p>
           </div>
               <div style={styles.inlineActions}>

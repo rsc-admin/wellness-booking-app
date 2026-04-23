@@ -5,7 +5,7 @@
 ### Step 1️⃣: Create GitHub Repo
 ```
 Go to github.com → Click "+" → "New repository"
-Name: wellness-booking-app
+Name: redsmart-booking
 ✓ Public
 ✓ Add README
 Create repository
@@ -55,8 +55,8 @@ https://github.com/new
 
 Fill in:
 ```
-Repository name: wellness-booking-app
-Description: Wellness services booking platform
+Repository name: redsmart-booking
+Description: RedSmart Booking platform
 Visibility: Public
 ✓ Initialize this repository with a README
 Click "Create repository"
@@ -116,8 +116,8 @@ https://git-scm.com/download
 ### Commands
 ```bash
 # 1. Clone your repo
-git clone https://github.com/YOUR-USERNAME/wellness-booking-app.git
-cd wellness-booking-app
+git clone https://github.com/YOUR-USERNAME/redsmart-booking.git
+cd redsmart-booking
 
 # 2. Copy files into this folder
 # Use your file explorer or:
@@ -145,7 +145,7 @@ git push origin main
 5. Wait ~2 min
 6. ✅ Your app is live!
 
-Live URL: wellness-booking-app.vercel.app
+Live URL: redsmart-booking.vercel.app
 ```
 
 ### Option 2: Netlify (1 minute)
@@ -157,7 +157,7 @@ Live URL: wellness-booking-app.vercel.app
 5. Click "Deploy site"
 6. ✅ Live in ~2 min
 
-Live URL: wellness-booking-app.netlify.app
+Live URL: redsmart-booking.netlify.app
 ```
 
 ---
@@ -166,7 +166,7 @@ Live URL: wellness-booking-app.netlify.app
 
 After uploading, check:
 
-- [ ] Go to your repo: `github.com/YOUR-USERNAME/wellness-booking-app`
+- [ ] Go to your repo: `github.com/YOUR-USERNAME/redsmart-booking`
 - [ ] See all files listed
 - [ ] See a nice README preview at bottom
 - [ ] "Code" tab shows your files
@@ -218,7 +218,7 @@ After uploading, check:
 
 Once deployed, share the link:
 ```
-https://wellness-booking-app.vercel.app
+https://redsmart-booking.vercel.app
 ```
 
 Works on:

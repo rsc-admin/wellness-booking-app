@@ -1,7 +1,7 @@
-# Wellness Booking App - Project Plan
+# RedSmart Booking - Project Plan
 
 ## Overview
-A wellness services booking platform where:
+A RedSmart Booking platform where:
 - **Customers** book services via responsive web app (mobile-optimized & desktop)
 - **Providers** manage bookings, add manual entries, and set work hours
 - **Backend** uses Google Sheets for data storage (simple, no server costs)
@@ -14,7 +14,7 @@ A wellness services booking platform where:
 **Status:** ✅ Built (needs mobile/desktop responsive refinement)
 
 **Features:**
-- Browse 6 wellness services (massage, yoga, facial, etc.)
+- Browse 6 appointment services (massage, yoga, facial, etc.)
 - Interactive calendar with real availability
 - Select date & time slots
 - Enter Nickname + Phone

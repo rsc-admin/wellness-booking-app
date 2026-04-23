@@ -1,4 +1,4 @@
-# Getting Your Wellness Booking App on GitHub
+# Getting Your RedSmart Booking on GitHub
 
 ## Quick Start (5 minutes)
 
@@ -13,7 +13,7 @@
 2. Click **"+"** icon (top right) → **"New repository"**
 3. Fill in details:
    - **Repository name:** `wellness-booking-app`
-   - **Description:** "Wellness services booking platform with provider dashboard"
+   - **Description:** "RedSmart Booking platform with provider dashboard"
    - **Visibility:** Public (or Private if you prefer)
    - **Initialize with README:** Check this box
    - Click **"Create repository"**
@@ -54,10 +54,10 @@ See "Full Setup with Git" section below.
 cd ~/Documents
 
 # Clone the repo (replace USERNAME with your GitHub username)
-git clone https://github.com/USERNAME/wellness-booking-app.git
+git clone https://github.com/USERNAME/redsmart-booking.git
 
 # Enter the directory
-cd wellness-booking-app
+cd redsmart-booking
 ```
 
 #### Step 2: Add Your Files
@@ -80,9 +80,9 @@ echo ".DS_Store" >> .gitignore
 ```bash
 # Copy this into README.md
 cat > README.md << 'EOF'
-# Wellness Booking App
+# RedSmart Booking
 
-A mobile-responsive wellness services booking platform built with React and Google Sheets.
+A mobile-responsive RedSmart Booking platform built with React and Google Sheets.
 
 ## Features
 - **For Customers:** Browse services, book appointments via interactive calendar
@@ -129,7 +129,7 @@ You should see:
 Enumerating objects: X, done.
 Counting objects: 100% (X/X), done.
 Delta compression using up to 8 threads
-To https://github.com/USERNAME/wellness-booking-app.git
+To https://github.com/USERNAME/redsmart-booking.git
  * [new branch]      main -> main
 ```
 
@@ -139,7 +139,7 @@ To https://github.com/USERNAME/wellness-booking-app.git
 
 ## Verify on GitHub
 
-1. Go to https://github.com/USERNAME/wellness-booking-app
+1. Go to https://github.com/USERNAME/redsmart-booking
 2. You should see:
    - All your files listed
    - README.md displayed at the bottom
@@ -157,7 +157,7 @@ Once files are on GitHub, you can deploy for free using:
 3. Paste your GitHub repo URL
 4. Click **"Import"**
 5. Vercel auto-detects React and deploys
-6. **Live URL:** `wellness-booking-app.vercel.app` (or custom domain)
+6. **Live URL:** `redsmart-booking.vercel.app` (or custom domain)
 
 **Time to live:** ~5 minutes
 
@@ -177,7 +177,7 @@ Once files are on GitHub, you can deploy for free using:
    - Click **"Configure"**
 3. Select **"React"** template
 4. Commit the workflow file
-5. GitHub automatically builds and deploys to `USERNAME.github.io/wellness-booking-app`
+5. GitHub automatically builds and deploys to `USERNAME.github.io/redsmart-booking`
 
 **Time to live:** ~10 minutes
 
@@ -236,7 +236,7 @@ git push origin main
 ### Error: "fatal: not a git repository"
 ```bash
 # You're not in the cloned folder. Navigate to it:
-cd wellness-booking-app
+cd redsmart-booking
 ```
 
 ### Error: "Authentication failed"
@@ -302,7 +302,7 @@ jobs:
 ## Sharing Your App
 
 Once deployed, share the live link:
-- **Customers:** `https://wellness-booking-app.vercel.app`
+- **Customers:** `https://redsmart-booking.vercel.app`
 - **Provider:** Add authentication, then share private link
 
 ---

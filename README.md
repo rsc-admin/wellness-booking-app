@@ -1,17 +1,17 @@
-# RedSmart Wellness - Booking App
+# RedSmart Booking
 
-A privacy-first wellness booking marketplace prototype with client booking, provider dashboards, admin tools, and Google Workbook sync through Google Apps Script.
+A privacy-first multi-provider booking service with client booking, provider dashboards, admin tools, and Google Workbook sync through Google Apps Script.
 
-**Current Preview:** `redsmart_all_features_preview.html`
+**Current Preview:** `index.html`
 
 ---
 
 ## 🎯 Overview
 
-RedSmart Wellness is being modernized from a single wellness booking app into a multi-provider platform. The current all-features HTML preview demonstrates the combined product direction: privacy-first client booking, provider scheduling, provider business tools, admin governance, and workbook-backed data.
+RedSmart Booking is the RedSmart scheduling service for providers, companies, and individuals that need configurable availability, customer booking, provider operations, and workbook-backed administration.
 
 ### For Customers
-- 📱 Browse active, admin-approved wellness providers
+- Browse active, admin-approved providers
 - 📅 Book without creating an account
 - 🔐 Optionally create a lightweight account with username and phone only
 - ⏰ See appointment times calculated from real provider availability, time off, existing appointments, and buffer rules
@@ -55,6 +55,12 @@ RedSmart Wellness is being modernized from a single wellness booking app into a 
 - [x] Payment and tip logging through Apps Script `createPayment`
 - [x] Graceful local/demo fallback when workbook sync fails
 
+## Service Responsibility Notice
+
+RedSmart Booking provides booking, scheduling, and lightweight provider operations software. RedSmart does not provide, supervise, warrant, insure, or guarantee the services listed or delivered by providers, companies, or individuals using the platform. Each provider is responsible for its own licensing, credentials, insurance, service quality, safety, pricing, taxes, cancellation policies, customer communications, and outcomes.
+
+Customer-facing and provider-facing deployments should include this notice, plus any provider-specific terms required by the provider's business, industry, or jurisdiction.
+
 ### Backend / Production Hardening 🔄
 - [ ] Replace demo PINs with production authentication
 - [ ] Persist provider notes to workbook or a proper backend table
@@ -94,8 +100,8 @@ Simply open the booking link and:
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-username/wellness-booking-app.git
-cd wellness-booking-app
+git clone https://github.com/rsc-admin/wellness-booking-app.git
+cd redsmart-booking
 
 # Install dependencies
 npm install
@@ -108,7 +114,7 @@ The app will open at http://localhost:3000
 
 #### Setup Google Workbook Integration
 
-The current preview uses Google Apps Script as the backend facade for the workbook. The active deployment URL is configured in `redsmart_all_features_preview.html`.
+The current preview uses Google Apps Script as the backend facade for the workbook. The active deployment URL is configured in `index.html`.
 
 The Apps Script actions currently used by the preview include:
 - `getUsers`, `getProviders`, `getBookings`, `getPayments`, `getRatings`, `getTimeOff`, `getOfflineBookings`, `getAvailability`
@@ -128,7 +134,7 @@ See [GITHUB_DEPLOYMENT_GUIDE.md](docs/GITHUB_DEPLOYMENT_GUIDE.md) for deployment
 ## 📁 Project Structure
 
 ```
-wellness-booking-app/
+redsmart-booking/
 ├── src/
 │   ├── components/
 │   │   ├── WellnessBookingGoogleSheets.jsx  # Main customer booking component
@@ -143,7 +149,7 @@ wellness-booking-app/
 │   ├── SETUP_GUIDE.md                       # Google Sheets setup
 │   ├── PROJECT_PLAN.md                      # Full roadmap
 │   └── GITHUB_DEPLOYMENT_GUIDE.md           # Deployment instructions
-├── redsmart_all_features_preview.html        # Current RedSmart all-features prototype
+├── index.html                                # Current RedSmart Booking all-features prototype
 ├── .gitignore
 ├── package.json
 ├── README.md
@@ -292,7 +298,7 @@ npm start
 
 ### Workbook not syncing through Apps Script
 1. Confirm the Apps Script web app is deployed and accessible to the app
-2. Check that the deployment URL in `redsmart_all_features_preview.html` is current
+2. Check that the deployment URL in `index.html` is current
 3. Verify the workbook contains the expected tabs, especially `USERS`, `PROVIDERS`, `BOOKINGS`, `PAYMENTS`, `TIME_OFF`, `OFFLINE_BOOKINGS`, and `PROVIDER_AVAILABILITY`
 4. Confirm Apps Script actions such as `getAvailability`, `createAvailability`, `updateAvailability`, and `deleteAvailability` are deployed in the latest version
 5. Check that workbook column headers match the schema above
@@ -353,10 +359,10 @@ This project is licensed under the MIT License - see [LICENSE](LICENSE) file for
 
 ## 👥 Credits
 
-Built with ❤️ for wellness providers
+Built for RedSmart Booking providers
 
 ---
 
 **Version:** 1.1.0-preview  
 **Last Updated:** April 19, 2026  
-**Status:** Active Development - RedSmart all-features prototype
+**Status:** Active Development - RedSmart Booking all-features prototype

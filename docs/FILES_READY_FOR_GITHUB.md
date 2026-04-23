@@ -129,7 +129,7 @@ wellness-booking-app/
 ### Pro Upload (Using Git - Recommended)
 ```bash
 ✓ Install Git
-✓ Clone repo: git clone https://github.com/USERNAME/wellness-booking-app.git
+✓ Clone repo: git clone https://github.com/USERNAME/redsmart-booking.git
 ✓ Copy all files into folder
 ✓ git add .
 ✓ git commit -m "Initial commit"
@@ -173,8 +173,8 @@ docs/
 
 ### Step 1: Organize Locally (5 min)
 ```bash
-mkdir wellness-booking-app
-cd wellness-booking-app
+mkdir redsmart-booking
+cd redsmart-booking
 
 # Create folder structure
 mkdir -p src/components public docs
@@ -198,8 +198,8 @@ mkdir -p src/components public docs
 
 **Option B - Professional (Using Git):**
 ```bash
-git clone https://github.com/YOUR-USERNAME/wellness-booking-app.git
-cd wellness-booking-app
+git clone https://github.com/YOUR-USERNAME/redsmart-booking.git
+cd redsmart-booking
 # Copy files into this folder
 git add .
 git commit -m "Initial commit: Wellness booking app"

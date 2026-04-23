@@ -84,20 +84,20 @@ function App() {
           }
         `}</style>
         <div className="selector-card">
-          <h1>Serenity Wellness</h1>
+          <h1>RedSmart Booking</h1>
           <p>Are you a customer or provider?</p>
           <div className="button-group">
             <button
               className="btn btn-customer"
               onClick={() => setUserType('customer')}
             >
-              📱 I'm a Customer - Book an Appointment
+              Book an Appointment
             </button>
             <button
               className="btn btn-provider"
               onClick={() => setUserType('provider')}
             >
-              🔑 I'm a Provider - Manage Bookings
+              Provider Dashboard
             </button>
           </div>
         </div>
